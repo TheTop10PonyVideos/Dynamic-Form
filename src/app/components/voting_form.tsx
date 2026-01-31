@@ -11,6 +11,7 @@ import { removeBallotItem } from "@/lib/api/ballot";
 import { validate, videoSearch } from "@/lib/api/video";
 import { ballot_check } from "@/lib/vote_rules";
 import { client_labels } from "@/lib/labels";
+import Image from "next/image";
 
 interface Props {
   cli_labels: client_labels,
@@ -163,26 +164,13 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
 
   // Ballot rules are checked in the client, here
   const { uniqueCreators, eligible, checkedEntries } = ballot_check(voteFields, cli_labels)
-  const should_warn = uniqueCreators < 5 || eligible.length < 5 || eligible.length !== checkedEntries.filter(entry => entry.input !== "").length
+  const should_warn = eligible.length < 5
 
   return (
     <>
       <VoteCounter cli_labels={cli_labels} eligibleCount={eligible.length} uniqueCreatorCount={uniqueCreators}/>
       <form className={styles.form} onSubmit={submit} autoComplete="off">
-        {
-          warning && <div className={styles.mask}>
-            <div className={styles.warning_prompt}>
-              <span><b>Warning</b></span>
-              <span>Ineligible votes will not be counted</span>
-              <span>If <b>less than 5</b> eligible votes are present, then <b>0</b> will be counted</span>
-              <span>Please continue only if you are sure these are eligible</span>
-              <div>
-                <button type="submit" value="export" className={styles.confirm}>Continue</button>
-                <button className={styles.go_back} onClick={() => {setWarning(false)}}>Go Back</button>
-              </div>
-            </div>
-          </div>
-        }
+        { warning && warnOverlay(eligible.length, () => setWarning(false)) }
         <div className={styles.headerfield}>
           <label>Voting for The Top 10 Pony Videos of {months[votingMonth]}</label>
           <p>
@@ -216,7 +204,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
           </div>
           <div className={styles.input} style={{ color: "grey", fontSize: 14, pointerEvents: "none" }}>For privacy reasons, only enter contact info on the official form</div>
         </div>
-        <button type="submit" value={should_warn ? "warn" : "export" } className={`${styles.exportButton} ${formOpen ? styles.submitButton : styles.disabledSubmitButton}`}>
+        <button type="submit" value={should_warn ? "warn" : "export" } className={`${styles.exportButton} ${formOpen ? (eligible.length ? styles.submitButton : styles.disabledSubmitButton2) : styles.disabledSubmitButton}`}>
           Export Votes
           <div className={styles.disabledExportNote}>
             Come back during the first week of {months[(votingMonth + 1) % 12]} when the voting form opens!
@@ -224,5 +212,32 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
         </button>
       </form>
     </>
+  )
+}
+
+function warnOverlay(votes: number, reset: () => void) {
+  return (
+    <div className={styles.mask}>
+      <div className={styles.warning_prompt}>
+        <span style={
+          {
+            display: 'flex',
+            fontSize: '1.4rem',
+            gap: '8px',
+            alignItems: 'center'
+          }
+        }>✨ <b>New</b> <Image src='/sunbeam.gif' width={35} height={35} alt='' unoptimized />
+        </span>
+        <span>It seems your ballot may have fewer than 5 eligible votes</span>
+        <span>That's okay! A new weighted system was implemented to allow this</span>
+        <span>You can read how it works <a href='https://www.thetop10ponyvideos.com/faqs#h.p9y6ton9fwz' style={{ pointerEvents: 'all' }} target='_blank'>here</a></span>
+        <span>Consider including at least <b>5</b> eligible votes, as each would then have a full weight</span>
+        <span>Current vote weight: <b>{votes / 5}</b> out of <b>1</b></span>
+        <div>
+          <button type="submit" value="export" className={styles.confirm}>Continue</button>
+          <button className={styles.go_back} onClick={() => {reset()}}>Go Back</button>
+        </div>
+      </div>
+    </div>
   )
 }

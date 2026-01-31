@@ -89,9 +89,7 @@ export default function LabelsTab({ labelSettings }: Props) {
   const { uniqueCreators, eligible, checkedEntries } = ballot_check(voteFields, labels)
 
   if (eligible.length < 5)
-    activeLabels.add(labels.too_few_votes.trigger)
-  else if (uniqueCreators < 5)
-    activeLabels.add(labels.diversity_rule.trigger)
+    activeLabels.add(labels.sub_5_votes.trigger)
 
   // Apply label configuration fields for previewing
   const withPreviews = checkedEntries.map(e => (

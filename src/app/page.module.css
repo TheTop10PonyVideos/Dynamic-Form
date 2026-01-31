@@ -366,6 +366,11 @@
   background-color: lightslategrey;
 }
 
+.disabledSubmitButton2 {
+  background-color: lightslategrey;
+  pointer-events: none;
+}
+
 .disabledExportNote {
   pointer-events: none;
 }

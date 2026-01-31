@@ -8,14 +8,16 @@ interface Props {
   uniqueCreatorCount: number
 }
 
-export default function VoteCounter({ cli_labels, eligibleCount, uniqueCreatorCount }: Props) {
+export default function VoteCounter({ cli_labels, eligibleCount }: Props) {
   const has5 = eligibleCount >= 5
-  const diverse = uniqueCreatorCount >= 5
-  const minStamp = labelStamp(cli_labels.too_few_votes, has5)
-  const diversityStamp = labelStamp(cli_labels.diversity_rule, diverse)
 
   // Prioritize severity, then 5 channel minimum over diversity
-  const stamp = minStamp.severity >= diversityStamp.severity ? minStamp : diversityStamp
+  const stamp = eligibleCount ? labelStamp(cli_labels.sub_5_votes, has5) :
+  { // Todo: move later
+    severity: 2,
+    icon: '',
+    label: { details: 'At least 1 eligible vote needed to submit' }
+  }
 
   return (
     <div className={styles.eligible_count}>
@@ -25,17 +27,9 @@ export default function VoteCounter({ cli_labels, eligibleCount, uniqueCreatorCo
       <div className={`${styles.eligible_count_note} ${[styles.good, styles.warn, styles.ineligible][stamp.severity]}`}>
       {
         !stamp.severity ?
-        "Minimum eligible vote requiremnt met!" :
+        "5 or more votes will have full weight!" :
 
-        stamp === minStamp ?
-        minStamp.label.details :
-
-        <div>
-          {diversityStamp.label.details}
-          <div>
-            <b>{uniqueCreatorCount}/5</b> unique creators present
-          </div>
-        </div>
+        stamp.label.details
       }
       </div>
     </div>

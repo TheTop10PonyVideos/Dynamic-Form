@@ -40,6 +40,6 @@ export async function getCliLabels(): Promise<client_labels> {
 		no_simping: syncedLabels.no_simping,
 		unsupported_site: syncedLabels.unsupported_site,
 		diversity_rule: syncedLabels.diversity_rule,
-		too_few_votes: syncedLabels.too_few_votes
+		sub_5_votes: syncedLabels.sub_5_votes
 	}
 }

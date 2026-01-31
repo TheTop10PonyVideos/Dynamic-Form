@@ -30,7 +30,7 @@ export type label_key =
 	"duplicate_votes" |
 	"missing_id" |
 	"unavailable" |
-	"too_few_votes" |
+	"sub_5_votes" |
 	"wrong_period" |
 	"edge_date" |
 	"too_short" |
@@ -49,7 +49,7 @@ export let labels: Record<label_key, Flag> = {
 	duplicate_votes:  { name: 'Duplicate vote',     type: 'ineligible', 	  trigger: 'Duplicate links in ballot',   details: 'Duplicate votes are not eligible' },
 	missing_id:       { name: 'Missing id',         type: 'ineligible', 	  trigger: 'No video id in link',         details: 'No video id present' },
 	unavailable:      { name: 'Unavailable video',  type: 'ineligible', 	  trigger: 'Empty metadata response',     details: 'Video is not public or is unavailable' },
-	too_few_votes:    { name: '1a',                 type: 'ineligible', 	  trigger: '<5 eligible videos',          details: 'Vote for a minimum of 5 eligible videos and maximum of 10' },
+	sub_5_votes:      { name: '1a',                 type: 'maybe ineligible', trigger: '<5 eligible videos',          details: 'Votes will be weighted when fewer than 5 are eligible' },
 	wrong_period:     { name: '2a',                 type: 'ineligible', 	  trigger: 'Video too old or new',        details: 'Vote for last month\'s videos based on your own time zone' },
 	edge_date:		  { name: '2a',					type: 'maybe ineligible', trigger: 'Video may be too old or new', details: 'Vote for last month\'s videos based on your own time zone' },
 	too_short:        { name: '4a',                 type: 'ineligible', 	  trigger: '<30 second video',            details: 'Short length: Videos must be 30 seconds or longer not including intros/outros/credits/etc' },
@@ -62,6 +62,6 @@ export let labels: Record<label_key, Flag> = {
 
 
 export type client_labels = Record<
-	"invalid_link" | "duplicate_votes" | "no_simping" | "unsupported_site" | "diversity_rule" | "too_few_votes",
+	"invalid_link" | "duplicate_votes" | "no_simping" | "unsupported_site" | "diversity_rule" | "sub_5_votes",
 	Flag
 >
