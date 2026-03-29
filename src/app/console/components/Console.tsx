@@ -16,7 +16,7 @@ interface Props {
   labelConfigs: Record<label_key, Flag>
 }
 
-export default function ControlPanel({ labelConfigs }: Props) {
+export default function Console({ labelConfigs }: Props) {
   const [activeTab, setActiveTab] = useState("Labels")
 
   return (

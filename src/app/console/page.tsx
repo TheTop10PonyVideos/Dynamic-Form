@@ -1,9 +1,9 @@
 import { getLabels } from "@/lib/data_cache";
-import ControlPanel from "./components/ControlPanel";
+import Console from "./components/Console";
 import { cookies } from "next/headers";
 import { forbidden } from "next/navigation";
 
-export default async function ControlPanelPage() {
+export default async function ConsolePage() {
   const userCookies = await cookies()
   const uid = userCookies.get("uid")!.value
 
@@ -12,5 +12,5 @@ export default async function ControlPanelPage() {
   
   const label_configs = await getLabels()
 
-  return <ControlPanel labelConfigs={label_configs} />
+  return <Console labelConfigs={label_configs} />
 }
