@@ -1,3 +1,4 @@
+import { ballot_item } from "@/generated/prisma";
 import { prisma } from "../prisma";
 import { adjustDate, getEligibleRange } from "../util";
 
@@ -31,8 +32,8 @@ export async function removeBallotItem(uid: string, index: number) {
 }
 
 
-export async function setBallotItem(uid: string, index: number, video_id: string, platform: string) {
-    const item = { video_id: video_id, platform, index, creation_date: new Date(Date.now()) }
+export async function setBallotItem(uid: string, index: number, metadata_id: bigint) {
+    const item = { metadata_id, index, creation_date: new Date(Date.now()) }
 
     await prisma.user.upsert({
         where: { id: uid },

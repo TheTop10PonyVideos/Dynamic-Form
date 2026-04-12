@@ -1,36 +1,46 @@
-import { requireAuth } from "@/app/api/authorization";
-import { annotateVideo as annotateVideo, removeVideoAnnotation, setSource, updateWhitelist } from "@/lib/queries/video";
+import { requireAuth, sendErrors } from "@/app/api/wrapper";
+import { annotateVideo as annotateVideo, removeVideoAnnotation, updateWhitelist } from "@/lib/queries/video";
 import { NextRequest } from "next/server";
 import { APIAnnotateVideoRequestBody } from "@/lib/api/video";
+import { get_video_keys } from "@/lib/external";
+import { VideoPlatform } from "@/lib/types";
 
 
 async function handler(req: NextRequest) {
     const body: APIAnnotateVideoRequestBody = await req.json()
+    let site_name: VideoPlatform | string
+    let video_id: string | null
 
-    if (typeof body.whitelisted === 'boolean')
-        updateWhitelist(body.video_id, body.platform, body.whitelisted)
+    if (body.eligibility && !['eligible', 'default', 'ineligible'].includes(body.eligibility))
+        return new Response('Invalid status', { status: 400 })
 
-    if (!body.status)
-        return new Response(null, { status: body.annotation ? 400 : 200 })
-
-    if (body.status === "default") {
-        removeVideoAnnotation(body.video_id, body.platform).catch()
-        setSource(body.video_id, body.platform, "")
+    try {
+        ({ site_name, video_id } = get_video_keys(new URL(body.link)))
+        if (!video_id) throw new Error()
     }
-    else if (body.status === "reupload") {
-        if (!body.annotation)
-            return new Response(null, { status: 400 })
-
-        setSource(body.video_id, body.platform, body.annotation)
+    catch {
+        return new Response('Malformed link or unsupported platform', { status: 400 })
     }
-    else {
-        if (!body.annotation)
-            return new Response(null, { status: 400 })
 
-        annotateVideo(body.video_id, body.platform, body.status, body.annotation)
-    }
+    if (
+        ((!body.eligibility || body.eligibility === 'default') && body.reason) ||
+        (!body.reason && body.eligibility !== undefined && body.eligibility !== 'default')
+    )
+        return new Response('Incompatible annotation and status pair', { status: 400 })
+
+    const actions = []
+
+    if (body.whitelisted !== undefined)
+        actions.push(() => updateWhitelist(video_id, site_name as VideoPlatform, body.whitelisted!))
+
+    if (body.eligibility === 'default')
+        actions.push(() => removeVideoAnnotation(video_id, site_name as VideoPlatform))
+    else if (body.eligibility)
+        actions.push(() => annotateVideo(video_id, site_name as VideoPlatform, body.eligibility as 'eligible' | 'ineligible', body.reason!))
+
+    await Promise.all(actions)
 
     return new Response()
 }
 
-export const POST = requireAuth(handler)
+export const POST = requireAuth(sendErrors(handler))

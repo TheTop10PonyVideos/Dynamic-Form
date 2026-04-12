@@ -1,7 +1,7 @@
 import { getAllData } from "@/lib/queries/etc";
 import { NextRequest } from "next/server"
 import { utils, write } from "xlsx"
-import { requireAuth } from "../authorization";
+import { requireAuth } from "../wrapper";
 
 // Endpoint for downloading all data from all tables as an xlsx file
 async function handler(req: NextRequest) {

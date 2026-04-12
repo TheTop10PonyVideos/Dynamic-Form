@@ -6,7 +6,7 @@ import styles from "../page.module.css"
 import { getVideoLinkTemp } from "@/lib/util";
 import { stampMap } from "@/lib/labels";
 import Image from "next/image";
-import { annotateVideo } from "@/lib/api/video";
+import { annotateVideo, setReupload } from "@/lib/api/video";
 
 function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, setSelectedVideo: Dispatch<SetStateAction<VideoPoolItem | null>> }) {
   let manual_label = videoItem.flags.find(f => f.trigger === "manual")
@@ -15,7 +15,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
 
   const [status, setStatus] = useState(manual_label?.type || "default")
   const [whitelisted, setWhitelisted] = useState(videoItem.whitelisted)
-  const [inputs, setInputs] = useState({ eligibility: manual_label?.details || "", source: videoItem.source })
+  const [inputs, setInputs] = useState({ eligibility: manual_label?.details || "", source: videoItem.source_link })
 
   const inputType = status === "reupload" ? "source" : "eligibility"
   const hideKey = `${videoItem.platform} - ${videoItem.id}`
@@ -23,11 +23,17 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
   const radioBtnChange: ChangeEventHandler<HTMLInputElement> = e => setStatus(e.target.value)
 
   const noteChange: ChangeEventHandler<HTMLTextAreaElement> = e => setInputs(
-    { ...inputs, [inputType]: e.target.value }
+    { ...inputs, [inputType]: e.target.value.trim() }
   )
 
   const save = async () => {
-    await annotateVideo(videoItem.id, videoItem.platform, status as VideoStatusSettings, inputs[inputType], whitelisted)
+    const link = getVideoLinkTemp(videoItem)
+
+    if (inputType === 'source')
+      await setReupload(link, inputs['source'])
+    else
+      await annotateVideo(link, status as VideoStatusSettings, inputs['eligibility'], whitelisted)
+
     setSelectedVideo(null)
   }
 

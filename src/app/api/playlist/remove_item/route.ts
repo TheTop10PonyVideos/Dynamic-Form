@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     if (!items)
         return new Response(null, { status: 404 })
 
-    const next_thumbnail = items[0]?.id === body.item_id ? items[1]?.video_metadata.thumbnail || undefined : undefined
+    const next_thumbnail = items[0]?.id === body.item_id ? items[1]?.video_metadata?.thumbnail || undefined : undefined
 
     await removePlaylistItem(uid, body.playlist_id, body.item_id, next_thumbnail)
 

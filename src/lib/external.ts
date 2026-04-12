@@ -1,7 +1,7 @@
 // Methods for extracting video metadata from external sources
 
 import { spawn } from "child_process"
-import { YTDLPItems, Flag, VideoPlatform } from "./types"
+import { YTDLPItems, Flag, VideoPlatform, VideoPlatforms } from "./types"
 import { getVideoMetadata, saveVideoMetadata } from "./queries/video"
 import { manual_label, video_metadata } from "@/generated/prisma"
 import { getLabels } from "./data_cache"
@@ -17,15 +17,147 @@ const accepted_domains = [
     "dailymotion.com",
     "dai.ly",
     "instagram.com",
+    "newgrounds.com",
+    "odysee.com",
     "pony.tube",
     "thishorsie.rocks",
     "tiktok.com",
     "twitter.com",
-    "newgrounds.com",
-    "odysee.com",
     "vimeo.com",
     "x.com",
 ]
+
+const site_names: Record<string, string> = {
+    'x': 'Twitter',
+    'bsky': 'Bluesky',
+    'pony': 'Pony',
+    'thishorsie': 'ThisHorsieRocks',
+    'dai': 'Dailymotion'
+}
+
+
+/**
+ * Given a non YouTube video URL, extracts the video id from it.
+ * 
+ * Returns null if no id can be extracted.
+ * 
+ * Non yotube videos seem to have their ids completely within the
+ * url path, so it should be fine if that is used as the id in the db
+ * until otherwise necessary. This resolves the issue of potential links
+ * with multiple videos, such as https://x.com/_Maka_11/status/1790185560805683463/video/1
+ * which contains a post id and an index
+ */
+export function extract_ytdl_id(url: URL) {
+    const video_id = url.pathname.replace(/^\/*|\/*$/, '')
+    return video_id || null
+}
+
+/**
+ * Given a YouTube video URL, extracts the video id from it.
+ * 
+ * Returns null if no id can be extracted.
+ */
+function extract_yt_id(url: URL) {
+    // Parse the URL to retrieve the video id, which is the only parameter we
+    // care about for the purpose of normalization. We currently recognize the
+    // following types of YouTube URL, some of which have the video id in a
+    // different place:
+    //
+    // Regular YouTube URL:      https://www.youtube.com/watch?v={VIDEO ID}
+    // No-subdomain YouTube URL: https://youtube.com/watch?v={VIDEO ID}
+    // Mobile YouTube URL:       https://m.youtube.com/watch?v={VIDEO ID}
+    // Livestream URL:           https://www.youtube.com/live/{VIDEO ID}
+    // Shortened URL:            https://youtu.be/{VIDEO ID}
+    // Shorts URL                https://www.youtube.com/shorts/{VIDEO ID}
+
+    const path = url.pathname.split("/")[1]
+    let match: RegExpExecArray | null = null
+
+    if (["watch", "live", "shorts"].includes(path)) {
+        const part = url.pathname + url.search
+
+        const patterns = [
+            /^\/watch\/?\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/, // Regular YouTube URL: eg. https://www.youtube.com/watch?v=9RT4lfvVFhA
+            /^\/shorts\/([a-zA-Z0-9_-]{11})/, // Shorts URL: eg. https://www.youtube.com/shorts/5uFeg2BOPNo
+            /^\/live\/([a-zA-Z0-9_-]{11})/, // Livestream URL: eg. https://www.youtube.com/live/Q8k4UTf8jiI
+        ]
+        patterns.find(pattern => match = pattern.exec(part))
+    }
+    else {
+        // Shortened YouTube URL: eg. https://youtu.be/9RT4lfvVFhA
+        match = /^([a-zA-Z0-9_-]{11})/.exec(path)
+    }
+
+    return match?.[1]
+}
+
+/**
+ * Given any video URL, extracts the video id from it.
+ * 
+ * Returns null if no id can be extracted.
+ */
+export function extract_video_id(url: URL) {
+    return youtube_domains.includes(url.hostname) ? extract_yt_id(url) : extract_ytdl_id(url)
+}
+
+export function get_nonyt_site_name(url: URL) {
+    const host = /\.?([^\.]+)\.[^\.]+$/.exec(url.hostname)![1]
+    return site_names[host] ?? host[0].toUpperCase() + host.slice(1)
+}
+
+/**
+ * Get the video_metadata key that would be used in the database
+ * @returns a site name and video id, with id being null if the link is to a platform that is unsupported
+ */
+export function get_video_keys(url: URL): { site_name: VideoPlatform, video_id: string } | { site_name: string, video_id: null } {
+    let site_name, video_id
+
+    if (youtube_domains.includes(url.hostname)) {
+        video_id = extract_yt_id(url)
+        site_name = 'YouTube'
+    }
+    else {
+        video_id = extract_ytdl_id(url)
+        site_name = get_nonyt_site_name(url)
+    }
+
+    if (!video_id || !VideoPlatforms.includes(site_name))
+        return { site_name: site_name, video_id: null }
+
+    return { site_name: site_name as VideoPlatform, video_id }
+}
+
+/**
+ * Given an ISO 8601 duration string, return the length of that duration in seconds.
+ */
+function convert_iso8601_duration_to_seconds(iso8601_duration: string) {
+
+    if (iso8601_duration.startsWith("PT"))
+        iso8601_duration = iso8601_duration.slice(2)
+
+    let total_seconds = 0, hours = 0, minutes = 0, seconds = 0
+
+    if (iso8601_duration.includes("H")) {
+        const [hours_part, remainder] = iso8601_duration.split("H")
+        iso8601_duration = remainder
+        hours = parseInt(hours_part)
+    }
+
+    if (iso8601_duration.includes("M")) {
+        const [minutes_part, remainder] = iso8601_duration.split("M")
+        iso8601_duration = remainder
+        minutes = parseInt(minutes_part)
+    }
+
+    if (iso8601_duration.includes("S")) {
+        const seconds_part = iso8601_duration.replace("S", "")
+        seconds = parseInt(seconds_part)
+    }
+
+    total_seconds = hours * 3600 + minutes * 60 + seconds
+
+    return total_seconds
+}
 
 async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPItems[] }> {
     return new Promise((resolve, reject) => {
@@ -61,78 +193,6 @@ async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPIt
     })
 }
 
-/**
- * Given a YouTube video URL, extracts the video id from it.
- * 
- * Returns null if no video id can be extracted.
- */
-function extract_yt_id(url: URL): string | undefined {
-    // Parse the URL to retrieve the video id, which is the only parameter we
-    // care about for the purpose of normalization. We currently recognize the
-    // following types of YouTube URL, some of which have the video id in a
-    // different place:
-    //
-    // Regular YouTube URL:      https://www.youtube.com/watch?v={VIDEO ID}
-    // No-subdomain YouTube URL: https://youtube.com/watch?v={VIDEO ID}
-    // Mobile YouTube URL:       https://m.youtube.com/watch?v={VIDEO ID}
-    // Livestream URL:           https://www.youtube.com/live/{VIDEO ID}
-    // Shortened URL:            https://youtu.be/{VIDEO ID}
-    // Shorts URL                https://www.youtube.com/shorts/{VIDEO ID}
-
-    const path = url.pathname.split("/")[1]
-    let match: RegExpExecArray | null = null
-
-    if (["watch", "live", "shorts"].includes(path)) {
-        const part = url.pathname + url.search
-
-        const patterns = [
-            /^\/watch\/?\?(?:.*&)?v=([a-zA-Z0-9_-]+)/, // Regular YouTube URL: eg. https://www.youtube.com/watch?v=9RT4lfvVFhA
-            /^\/shorts\/([a-zA-Z0-9_-]+)/, // Shorts URL: eg. https://www.youtube.com/shorts/5uFeg2BOPNo
-            /^\/live\/([a-zA-Z0-9_-]+)/, // Livestream URL: eg. https://www.youtube.com/live/Q8k4UTf8jiI
-        ]
-        patterns.find(pattern => match = pattern.exec(part))
-    }
-    else {
-        // Shortened YouTube URL: eg. https://youtu.be/9RT4lfvVFhA
-        match = /^([a-zA-Z0-9_-]+)/.exec(path)
-    }
-
-    // Youtube video ids are strictly 11 characters
-    return match?.[1].slice(0, 11)
-}
-
-/**
- * Given an ISO 8601 duration string, return the length of that duration in seconds.
- */
-function convert_iso8601_duration_to_seconds(iso8601_duration: string) {
-
-    if (iso8601_duration.startsWith("PT"))
-        iso8601_duration = iso8601_duration.slice(2)
-
-    let total_seconds = 0, hours = 0, minutes = 0, seconds = 0
-
-    if (iso8601_duration.includes("H")) {
-        const [hours_part, remainder] = iso8601_duration.split("H")
-        iso8601_duration = remainder
-        hours = parseInt(hours_part)
-    }
-
-    if (iso8601_duration.includes("M")) {
-        const [minutes_part, remainder] = iso8601_duration.split("M")
-        iso8601_duration = remainder
-        minutes = parseInt(minutes_part)
-    }
-
-    if (iso8601_duration.includes("S")) {
-        const seconds_part = iso8601_duration.replace("S", "")
-        seconds = parseInt(seconds_part)
-    }
-
-    total_seconds = hours * 3600 + minutes * 60 + seconds
-
-    return total_seconds
-}
-
 async function from_youtube(url: URL, with_annotation: boolean): Promise<video_metadata & { manual_label: manual_label | null } | Flag> {
     const video_id = extract_yt_id(url)
 
@@ -158,7 +218,7 @@ async function from_youtube(url: URL, with_annotation: boolean): Promise<video_m
 
     const video_data = {
         title: snippet["title"],
-        id: video_id,
+        video_id: video_id,
         thumbnail: snippet.thumbnails.medium.url,
         uploader: snippet["channelTitle"],
         uploader_id: snippet["channelId"],
@@ -167,59 +227,29 @@ async function from_youtube(url: URL, with_annotation: boolean): Promise<video_m
         platform: "YouTube",
         recent: upload_date >= getEligibleRange()[0],
         whitelisted: false,
-        source: ''
-    } satisfies video_metadata
+        source: null
+    } satisfies Omit<video_metadata, 'id'>
 
-    await saveVideoMetadata(video_data)
-    return  { ...video_data, manual_label: null }
+    return { ...(await saveVideoMetadata(video_data)), manual_label: null }
 }
 
 /**
  * Query yt-dlp for the given URL.
  */
 async function from_other(url: URL, with_annotation: boolean): Promise<video_metadata & { manual_label: manual_label | null } | Flag> {
-    let netloc = url.hostname
-    
-    if (netloc.indexOf(".") != netloc.lastIndexOf("."))
-        netloc = netloc.slice(netloc.indexOf(".") + 1)
+    let netloc = /([^.]+\.[^.]+)$/.exec(url.hostname)![1]
 
     if (!(accepted_domains.includes(netloc)))
         return (await getLabels()).unsupported_site
 
-    /**
-     * Non yotube videos seem to have their ids completely within the
-     * url path, so it should be fine if that is used as the id in the db
-     * until otherwise necessary. This resolves the issue of potential links
-     * with multiple videos, such as https://x.com/_Maka_11/status/1790185560805683463/video/1
-     * which contains a post id and an index
-     */
-    const video_db_id = url.pathname.replace(/^\/*|\/*$/, "")
+    const video_id = extract_ytdl_id(url)
 
-    if (!video_db_id)
+    if (!video_id)
         return (await getLabels()).missing_id
 
-    let site: string = netloc.split(".")[0]
-    site = site[0].toUpperCase() + site.slice(1)
+    const site = get_nonyt_site_name(url)
 
-    switch (site) {
-        case "X":
-            site = "Twitter"
-            break
-        case "Bsky":
-            site = "Bluesky"
-            break
-        case "Pony":
-            site = "PonyTube"
-            break
-        case "Thishorsie":
-            site = "ThisHorsieRocks"
-            break
-        case "Dai":
-            site = "Dailymotion"
-            break
-    }
-
-    const cached = await getVideoMetadata(video_db_id, site as VideoPlatform, with_annotation)
+    const cached = await getVideoMetadata(video_id, site as VideoPlatform, with_annotation)
 
     if (cached)
         return cached
@@ -269,7 +299,7 @@ async function from_other(url: URL, with_annotation: boolean): Promise<video_met
 
     const video_data = {
         title: response["title"],
-        id: video_db_id,
+        video_id: video_id,
         thumbnail: response["thumbnail"] || "",
         uploader: response["uploader"],
         uploader_id: response["uploader_id"]!,
@@ -278,11 +308,10 @@ async function from_other(url: URL, with_annotation: boolean): Promise<video_met
         platform: site.charAt(0).toUpperCase() + site.slice(1),
         recent: upload_date >= getEligibleRange()[0],
         whitelisted: false,
-        source: ''
-    } satisfies video_metadata
+        source: null
+    } satisfies Omit<video_metadata, 'id'>
 
-    await saveVideoMetadata(video_data)
-    return { ...video_data, manual_label: null }
+    return { ...(await saveVideoMetadata(video_data)), manual_label: null }
 }
 
 /**

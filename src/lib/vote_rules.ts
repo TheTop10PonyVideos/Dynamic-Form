@@ -63,13 +63,12 @@ export function ballot_check(entries: BallotEntryField[], cli_labels: client_lab
         if (!entry.videoData)
             continue
 
-        const vid_id = `${entry.videoData.id}-${entry.videoData.platform}`
         const creator_id = `${entry.videoData.uploader}-${entry.videoData.platform}`
 
-        if (uniqueVids.has(vid_id))
+        if (uniqueVids.has(entry.videoData.link))
             entry.flags.push(cli_labels.duplicate_votes)
         else
-            uniqueVids.add(vid_id)
+            uniqueVids.add(entry.videoData.link)
 
         // Don't count creators from ineligible votes since some otherwise eligible votes may be flagged
         if (entry.flags.some(f => f.type === "ineligible"))

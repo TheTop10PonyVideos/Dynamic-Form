@@ -1,4 +1,4 @@
-import { video_metadata } from "@/generated/prisma";
+import { Prisma, video_metadata } from "@/generated/prisma";
 import { prisma } from "../prisma";
 import { VideoPlatform, VideoStatusSettings } from "../types";
 import { adjustDate } from "../util";
@@ -7,8 +7,8 @@ import { adjustDate } from "../util";
 export async function getVideoMetadata(id: string, platform: VideoPlatform, with_annotation: boolean) {
     const metadata = await prisma.video_metadata.findUnique({
         where: {
-            id_platform: {
-                id: id,
+            video_id_platform: {
+                video_id: id,
                 platform: platform
             }
         },
@@ -25,50 +25,95 @@ export async function getVideoMetadata(id: string, platform: VideoPlatform, with
 }
 
 
-export async function saveVideoMetadata(video_data: video_metadata) {
-    return prisma.video_metadata.create({ data: video_data }).catch(console.log);
+export async function saveVideoMetadata(video_data: Omit<video_metadata, 'id'>) {
+    return await prisma.video_metadata.create({ data: video_data })
 }
 
 
 export async function annotateVideo(video_id: string, platform: VideoPlatform, status: Exclude<VideoStatusSettings, "default" | "reupload">, annotation: string) {
-    return prisma.manual_label.upsert({
+    await prisma.video_metadata.update({
         where: {
             video_id_platform: { video_id, platform }
         },
-        create: {
-            video_id, platform,
-            label: status,
-            content: annotation
-        },
-        update: {
-            label: status,
-            content: annotation
+        data: {
+            manual_label: {
+                upsert: {
+                    create: {
+                        label: status,
+                        content: annotation
+                    },
+                    update: {
+                        label: status,
+                        content: annotation
+                    }
+                }
+            }
         }
     })
 }
 
 
 export async function removeVideoAnnotation(video_id: string, platform: VideoPlatform) {
-    return prisma.manual_label.delete({
-        where: {
-            video_id_platform: { video_id, platform }
-        }
-    })
+    try {
+        await prisma.video_metadata.update({
+            where: {
+                video_id_platform: { video_id, platform }
+            },
+            data: {
+                manual_label: { delete: true }
+            }
+        })
+    }
+    catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
+            throw error
+    }
 }
 
 
-export async function setSource(video_id: string, platform: VideoPlatform, annotation: string) {
-    return prisma.video_metadata.update({
-        where: { id_platform: { id: video_id, platform } },
-        data: { source: annotation }
-    })
+export async function setSource(reupload_id: string, reupload_platform: VideoPlatform, original_id: string, original_platform: VideoPlatform) {
+    const original_metadta = await getVideoMetadata(original_id, original_platform, false)
+
+    if (!original_metadta)
+        return [null, null]
+
+    try {
+        const reupload_metadata = await prisma.video_metadata.update({
+            where: { video_id_platform: { video_id: reupload_id, platform: reupload_platform } },
+            data: { source: original_metadta.id }
+        })
+
+        return [original_metadta, reupload_metadata]
+    }
+    catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
+            return [original_metadta, null]
+
+        throw error
+    }
+}
+
+
+export async function resetSource(target_id: string, target_platform: VideoPlatform) {
+    try {
+        return await prisma.video_metadata.update({
+            where: { video_id_platform: { video_id: target_id, platform: target_platform } },
+            data: { source: null }
+        })
+    }
+    catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')
+            return null
+
+        throw error
+    }
 }
 
 
 export async function updateWhitelist(video_id: string, platform: VideoPlatform, whitelisted: boolean) {
     return prisma.video_metadata.update({
         where: {
-            id_platform: { id: video_id, platform }
+            video_id_platform: { video_id, platform }
         },
         data: { whitelisted }
     })

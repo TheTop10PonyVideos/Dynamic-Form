@@ -14,3 +14,14 @@ export function requireAuth(handler: (req: NextRequest) => Promise<Response>) {
         return handler(req)
     }
 }
+
+export function sendErrors(handler: (req: NextRequest) => Promise<Response>) {
+    return async function (req: NextRequest) {    
+        try {
+            return await handler(req)
+        }
+        catch (error) {
+            return new Response(String(error), { status: 500 })
+        }
+    }
+}

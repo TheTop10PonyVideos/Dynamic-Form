@@ -9,13 +9,10 @@ datasource db {
 }
 
 model manual_label {
-  video_id       String
-  platform       String
   label          String
   content        String
-  video_metadata video_metadata @relation(fields: [video_id, platform], references: [id, platform], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([video_id, platform])
+  metadata_id    BigInt         @id
+  video_metadata video_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model playlist {
@@ -31,29 +28,31 @@ model playlist {
 model playlist_item {
   id             Int            @id @default(autoincrement())
   playlist_id    String
-  video_id       String
-  platform       String
+  metadata_id    BigInt
+  video_metadata video_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   playlist       playlist       @relation(fields: [playlist_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  video_metadata video_metadata @relation(fields: [video_id, platform], references: [id, platform], onDelete: Cascade, onUpdate: NoAction)
 }
 
 model video_metadata {
-  id            String
-  thumbnail     String
-  title         String
-  uploader      String
-  uploader_id   String
-  upload_date   DateTime        @db.Date
-  duration      Int?
-  platform      String
-  whitelisted   Boolean         @default(false)
-  source        String          @default("")
-  recent        Boolean
-  ballot_item   ballot_item[]
-  manual_label  manual_label?
-  playlist_item playlist_item[]
+  video_id             String
+  thumbnail            String
+  title                String
+  uploader             String
+  uploader_id          String
+  upload_date          DateTime         @db.Date
+  duration             Int?
+  platform             String
+  recent               Boolean
+  whitelisted          Boolean          @default(false)
+  id                   BigInt           @id @default(autoincrement())
+  source               BigInt?
+  ballot_item          ballot_item[]
+  manual_label         manual_label?
+  playlist_item        playlist_item[]
+  video_metadata       video_metadata?  @relation("video_metadataTovideo_metadata", fields: [source], references: [id], onUpdate: NoAction)
+  other_video_metadata video_metadata[] @relation("video_metadataTovideo_metadata")
 
-  @@id([id, platform])
+  @@unique([video_id, platform])
 }
 
 model user {
@@ -70,12 +69,11 @@ model label_config {
 
 model ballot_item {
   user_id        String
-  video_id       String
-  platform       String
-  index          Int
   creation_date  DateTime       @db.Timestamp(6)
+  index          Int
+  metadata_id    BigInt
+  video_metadata video_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user           user           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  video_metadata video_metadata @relation(fields: [video_id, platform], references: [id, platform], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, index])
 }

@@ -44,16 +44,16 @@ const platform_bases_temp = {
     "Vimeo": "vimeo.com/"
 }
 
-export function getVideoLinkTemp(data: { platform: string, id: string, uploader_id: string }) {
-    return `https://${platform_bases_temp[data.platform as VideoPlatform]}${data.id}`
+export function getVideoLinkTemp(data: { platform: string, video_id: string, uploader_id: string }) {
+    return `https://${platform_bases_temp[data.platform as VideoPlatform]}${data.video_id}`
 }
 
 /**
  * Truncates and transforms video metadata to only what the client needs
  */
 export function toClientVideoMetadata(video_metadata: video_metadata, strip_data = true): VideoDataClient {
-    const clientReceivable = strip_data ? (({ whitelisted, duration, upload_date, recent, ...stripped }) => stripped)(video_metadata) : video_metadata
-    const withLink = {...clientReceivable, link: getVideoLinkTemp(clientReceivable) }
+    const clientReceivable = strip_data ? (({ whitelisted, duration, upload_date, recent, video_id, id, ...stripped }) => stripped)(video_metadata) : video_metadata
+    const withLink = { ...clientReceivable, link: getVideoLinkTemp(video_metadata) }
     return withLink
 }
 
@@ -66,7 +66,7 @@ const link = /(https?:\/\/)?[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+/
  */
 export function testLink(input: string): false | Flag[] {
     input = input.trim()
-    if (!/^[^\s]+$/.test(input)) return false
+    if (!input) return false
 
     if (validLink.test(input)) return []
     if (link.test(input)) return [labels.unsupported_site]
@@ -78,7 +78,7 @@ export function testLink(input: string): false | Flag[] {
  */
 export function cliTestLink(input: string, cli_labels: client_labels): false | Flag[] {
     input = input.trim()
-    if (!/^[^\s]+$/.test(input)) return false
+    if (!input) return false
 
     if (validLink.test(input)) return []
     if (link.test(input)) return [cli_labels.unsupported_site]

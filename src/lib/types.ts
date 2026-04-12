@@ -17,9 +17,24 @@ export type VideoPlatform =
     "Twitter" |
     "Vimeo"
 
-export type VideoDataClient = Omit<video_metadata, "upload_date" | "duration" | "whitelisted" | "recent"> & { link: string }
+export const VideoPlatforms = [
+    "YouTube",
+    "Bilibili",
+    "Bluesky",
+    "Dailymotion",
+    "Instagram",
+    "Newgrounds",
+    "Odysee",
+    "PonyTube",
+    "Tiktok",
+    "ThisHorsieRocks",
+    "Twitter",
+    "Vimeo"
+]
 
-export type VideoStatusSettings = "eligible" | "default" | "ineligible" | "reupload"
+export type VideoDataClient = Omit<video_metadata, "upload_date" | "duration" | "whitelisted" | "recent" | "video_id" | "id"> & { link: string }
+
+export type VideoStatusSettings = "eligible" | "default" | "ineligible"
 
 /**
  * Used to signify a videos eligibility status
@@ -65,5 +80,6 @@ export type VideoPoolItem = Omit<video_metadata, "upload_date" | "platform"> & {
     votes: number,
     flags: Flag[],
     upload_date: string,
-    platform: VideoPlatform
+    platform: VideoPlatform,
+    source_link: string
 }

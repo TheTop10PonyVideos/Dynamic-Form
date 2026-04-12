@@ -1,4 +1,4 @@
-import { Flag, VideoStatusSettings, VideoPlatform, VideoDataClient } from '@/lib/types';
+import { Flag, VideoStatusSettings as VideoEligibilitySetting, VideoPlatform, VideoDataClient } from '@/lib/types';
 import { label_key } from '../labels';
 
 
@@ -49,28 +49,26 @@ export async function updateLabels(label_updates: Record<label_key, Flag>) {
 
 
 export type APIAnnotateVideoRequestBody = {
-    video_id: string
-    platform: VideoPlatform
-    status?: VideoStatusSettings
+    link: string
+    eligibility?: VideoEligibilitySetting
+    reason?: string
     whitelisted?: boolean
-    annotation?: string
-}    
+}
 
 /**
  * Annotate a video to override its auto assigned eligibility status and notes that are shown to the voters. 
- * @param video_id The video's id
- * @param platform The platform hosting the video
- * @param status A FlagStatus or 'default' to signal that tnhe manual label shouldn't be used
+ * @param link The link to the video
+ * @param eligibility A FlagStatus or 'default' to signal that tnhe manual label shouldn't be used
  * @param whitelisted Whether the video should appear in search results
- * @param annotation The reason for the eligibility annotation or source url if status is 'alternative'
+ * @param reason The reason for the eligibility annotation or source url if status is 'alternative'
  */
-export async function annotateVideo(video_id: string, platform: VideoPlatform, status: VideoStatusSettings, annotation: string, whitelisted: boolean) {
-    const body = { video_id, platform, status, whitelisted, annotation } satisfies APIAnnotateVideoRequestBody
+export async function annotateVideo(link: string, eligibility: VideoEligibilitySetting, reason: string, whitelisted: boolean) {
+    const body = { link, eligibility, whitelisted, reason } satisfies APIAnnotateVideoRequestBody
 
     const res = await fetch('/api/pool/annotate_video', {
         method: 'POST',
         body: JSON.stringify(body)
-    })    
+    })
 
     return res
 }
@@ -80,5 +78,31 @@ export type APIVideoSearchResponseBody = { search_results: VideoDataClient[] }
 
 export async function videoSearch(query: string): Promise<APIVideoSearchResponseBody> {
     const res = await fetch(`/api/video/search?q=${encodeURIComponent(query)}`, { method: 'GET' })
+    return await res.json()
+}
+
+export type APISetReuploadRequestBody = {
+    reupload_link: string,
+    original_link: string | null
+}
+
+export type APISetReuploadResponseBody = {
+    reupload_title: string,
+    reupload_platform: string
+} | {
+    reupload_title: string,
+    reupload_platform: string,
+    original_title: string,
+    original_platform: string
+}
+
+export async function setReupload(reupload_link: string, original_link: string | null): Promise<APISetReuploadResponseBody> {
+    const body = { reupload_link, original_link } satisfies APISetReuploadRequestBody
+
+    const res = await fetch('/api/pool/is_reupload', {
+        method: 'POST',
+        body: JSON.stringify(body)
+    })
+
     return await res.json()
 }

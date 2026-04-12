@@ -3,7 +3,7 @@ import { removeBallotItem, setBallotItem } from '@/lib/queries/ballot'
 import { video_check } from '@/lib/vote_rules'
 import { NextRequest } from 'next/server'
 import { APIValidateRequestBody } from '@/lib/api/video'
-import { getVideoLinkTemp, toClientVideoMetadata } from '@/lib/util'
+import { toClientVideoMetadata } from '@/lib/util'
 
 // Route for checking an entry in the ballot against the rules, and saving its position
 export async function POST(req: NextRequest) {
@@ -15,16 +15,16 @@ export async function POST(req: NextRequest) {
   const uid = req.cookies.get("uid")?.value
   const fetch_result = await fetch_metadata(body.link, true)
 
-  const [flags, metadata] = "type" in fetch_result ? [[fetch_result], undefined] : [await video_check(fetch_result), fetch_result]
+  const [annotations, metadata] = "type" in fetch_result ? [[fetch_result], undefined] : [await video_check(fetch_result), fetch_result]
 
   if (body.index !== undefined && uid) {
     if (!metadata)
       removeBallotItem(uid, body.index!).catch()
     else
-      await setBallotItem(uid, body.index!, metadata.id, metadata.platform)
+      await setBallotItem(uid, body.index!, metadata.id)
   }
   const all_data = (req.nextUrl.searchParams.get('all_data') || 'false').toLowerCase() === 'true'
   const return_data = metadata && toClientVideoMetadata(metadata, !all_data)
 
-  return Response.json({ field_flags: flags, video_data: return_data })
+  return Response.json({ field_flags: annotations, video_data: return_data })
 }

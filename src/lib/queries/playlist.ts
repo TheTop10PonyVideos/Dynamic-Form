@@ -1,5 +1,6 @@
 import { video_metadata } from "@/generated/prisma";
 import { prisma } from "../prisma";
+import { getVideoMetadata } from "./video";
 
 
 export function getPlaylists(uid: string) {
@@ -50,10 +51,7 @@ export function addPlaylistItem(uid: string, playlist_id: string, data: video_me
         },
         update: {
             playlist_item: {
-                create: {
-                    video_id: data.id,
-                    platform: data.platform
-                }
+                create: { metadata_id: data.id }
             }
         },
         create: {
@@ -61,10 +59,7 @@ export function addPlaylistItem(uid: string, playlist_id: string, data: video_me
             owner_id: uid,
             thumbnail: data.thumbnail,
             playlist_item: {
-                create: {
-                    video_id: data.id,
-                    platform: data.platform
-                }
+                create: { metadata_id: data.id }
             }
         }
     })

@@ -1,5 +1,5 @@
 import { video_check } from "@/lib/vote_rules";
-import { requireAuth } from "../authorization";
+import { requireAuth } from "../wrapper";
 import { getPool } from "@/lib/queries/etc";
 
 async function handler() {
