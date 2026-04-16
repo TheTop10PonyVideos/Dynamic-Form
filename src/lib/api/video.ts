@@ -10,6 +10,7 @@ export type APIValidateRequestBody = {
 export type APIValidateResponseBody = {
     field_flags: Flag[]
     video_data?: VideoDataClient
+    reupload_of?: string
 }
 
 /**
@@ -55,6 +56,11 @@ export type APIAnnotateVideoRequestBody = {
     whitelisted?: boolean
 }
 
+export type APIAnnotateVideoResponseBody = {
+    title: string,
+    platform: string
+}
+
 /**
  * Annotate a video to override its auto assigned eligibility status and notes that are shown to the voters. 
  * @param link The link to the video
@@ -62,7 +68,7 @@ export type APIAnnotateVideoRequestBody = {
  * @param whitelisted Whether the video should appear in search results
  * @param reason The reason for the eligibility annotation or source url if status is 'alternative'
  */
-export async function annotateVideo(link: string, eligibility: VideoEligibilitySetting, reason: string, whitelisted: boolean) {
+export async function annotateVideo(link: string, eligibility: VideoEligibilitySetting, reason: string, whitelisted: boolean): Promise<APIAnnotateVideoResponseBody> {
     const body = { link, eligibility, whitelisted, reason } satisfies APIAnnotateVideoRequestBody
 
     const res = await fetch('/api/pool/annotate_video', {
@@ -70,7 +76,7 @@ export async function annotateVideo(link: string, eligibility: VideoEligibilityS
         body: JSON.stringify(body)
     })
 
-    return res
+    return await res.json()
 }
 
 

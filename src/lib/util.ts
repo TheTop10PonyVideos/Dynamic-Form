@@ -50,11 +50,27 @@ export function getVideoLinkTemp(data: { platform: string, video_id: string, upl
 
 /**
  * Truncates and transforms video metadata to only what the client needs
+ * TODO: fix typing nightmare
  */
-export function toClientVideoMetadata(video_metadata: video_metadata, strip_data = true): VideoDataClient {
-    const clientReceivable = strip_data ? (({ whitelisted, duration, upload_date, recent, video_id, id, ...stripped }) => stripped)(video_metadata) : video_metadata
+export function toClientVideoMetadata(video_metadata: video_metadata & { video_metadata?: video_metadata | VideoDataClient | null }, strip_data = true): VideoDataClient | (Omit<video_metadata, 'id' | 'source'> & { link: string, video_metadata?: video_metadata }) {
+    let clientReceivable: any
+
+    if (strip_data)
+        clientReceivable = (({ whitelisted, duration, upload_date, recent, video_id, id, source, ...stripped }) => stripped)(video_metadata)
+    else
+        clientReceivable = (({ id, source, ...stripped }) => stripped)(video_metadata)
+
+    if (clientReceivable.manual_label) {
+        const { metadata_id, ...manual_annotation } = clientReceivable.manual_label as any
+        clientReceivable.manual_label = manual_annotation
+    }
+
+    if (clientReceivable.video_metadata)
+        clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata as video_metadata & { video_metadata?: video_metadata }, strip_data)
+
     const withLink = { ...clientReceivable, link: getVideoLinkTemp(video_metadata) }
-    return withLink
+
+    return withLink as VideoDataClient
 }
 
 const validLink = /(https?:\/\/)?(\w+\.)?(pony\.tube|youtube\.com|youtu\.be|bilibili\.com|vimeo\.com|thishorsie\.rocks|dailymotion\.com|dai\.ly|tiktok\.com|twitter\.com|x\.com|odysee\.com|newgrounds\.com|bsky\.app|instagram\.com)\/?[^\s]{0,500}/

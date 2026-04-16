@@ -32,7 +32,7 @@ export const VideoPlatforms = [
     "Vimeo"
 ]
 
-export type VideoDataClient = Omit<video_metadata, "upload_date" | "duration" | "whitelisted" | "recent" | "video_id" | "id"> & { link: string }
+export type VideoDataClient = Omit<video_metadata, "upload_date" | "duration" | "whitelisted" | "recent" | "video_id" | "id" | "source"> & { link: string, video_metadata?: video_metadata }
 
 export type VideoStatusSettings = "eligible" | "default" | "ineligible"
 

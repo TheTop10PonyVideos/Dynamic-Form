@@ -39,8 +39,6 @@ const site_names: Record<string, string> = {
 /**
  * Given a non YouTube video URL, extracts the video id from it.
  * 
- * Returns null if no id can be extracted.
- * 
  * Non yotube videos seem to have their ids completely within the
  * url path, so it should be fine if that is used as the id in the db
  * until otherwise necessary. This resolves the issue of potential links
@@ -48,8 +46,7 @@ const site_names: Record<string, string> = {
  * which contains a post id and an index
  */
 export function extract_ytdl_id(url: URL) {
-    const video_id = url.pathname.replace(/^\/*|\/*$/, '')
-    return video_id || null
+    return url.pathname.replace(/^\/*|\/*$/, '')
 }
 
 /**
@@ -103,28 +100,6 @@ export function extract_video_id(url: URL) {
 export function get_nonyt_site_name(url: URL) {
     const host = /\.?([^\.]+)\.[^\.]+$/.exec(url.hostname)![1]
     return site_names[host] ?? host[0].toUpperCase() + host.slice(1)
-}
-
-/**
- * Get the video_metadata key that would be used in the database
- * @returns a site name and video id, with id being null if the link is to a platform that is unsupported
- */
-export function get_video_keys(url: URL): { site_name: VideoPlatform, video_id: string } | { site_name: string, video_id: null } {
-    let site_name, video_id
-
-    if (youtube_domains.includes(url.hostname)) {
-        video_id = extract_yt_id(url)
-        site_name = 'YouTube'
-    }
-    else {
-        video_id = extract_ytdl_id(url)
-        site_name = get_nonyt_site_name(url)
-    }
-
-    if (!video_id || !VideoPlatforms.includes(site_name))
-        return { site_name: site_name, video_id: null }
-
-    return { site_name: site_name as VideoPlatform, video_id }
 }
 
 /**
@@ -193,7 +168,7 @@ async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPIt
     })
 }
 
-async function from_youtube(url: URL, with_annotation: boolean): Promise<video_metadata & { manual_label: manual_label | null } | Flag> {
+async function from_youtube(url: URL, with_annotation: boolean) {
     const video_id = extract_yt_id(url)
 
     if (!video_id)
@@ -236,7 +211,7 @@ async function from_youtube(url: URL, with_annotation: boolean): Promise<video_m
 /**
  * Query yt-dlp for the given URL.
  */
-async function from_other(url: URL, with_annotation: boolean): Promise<video_metadata & { manual_label: manual_label | null } | Flag> {
+async function from_other(url: URL, with_annotation: boolean) {
     let netloc = /([^.]+\.[^.]+)$/.exec(url.hostname)![1]
 
     if (!(accepted_domains.includes(netloc)))

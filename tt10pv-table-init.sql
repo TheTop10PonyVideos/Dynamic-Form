@@ -123,3 +123,4 @@ ALTER TABLE manual_label ADD PRIMARY KEY (metadata_id);
 ALTER TABLE video_metadata DROP COLUMN source;
 ALTER TABLE video_metadata ADD COLUMN source BIGINT;
 ALTER TABLE video_metadata ADD FOREIGN KEY (source) REFERENCES video_metadata (id) ON DELETE SET NULL;
+ALTER TABLE video_metadata ADD CHECK (source <> id);
