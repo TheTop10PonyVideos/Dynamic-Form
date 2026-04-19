@@ -15,7 +15,12 @@ export async function getBallotItems(uid: string) {
         },
         include: {
             video_metadata: {
-                include: { manual_label: true }
+                include: {
+                    manual_label: true,
+                    video_metadata: {
+                        include: { manual_label: true }
+                    }
+                }
             }
         }
     })

@@ -57,7 +57,8 @@ export type APIAnnotateVideoRequestBody = {
 }
 
 export type APIAnnotateVideoResponseBody = {
-    title: string,
+    video_id: string
+    title: string
     platform: string
 }
 

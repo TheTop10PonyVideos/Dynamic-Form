@@ -15,15 +15,13 @@ export async function POST(req: NextRequest) {
   const uid = req.cookies.get("uid")?.value
   const fetch_result = await fetch_metadata(body.link, true)
   
-  let [annotations, metadata] = 'type' in fetch_result ? [[fetch_result], undefined] : [await video_check(fetch_result), fetch_result]
+  let [annotations, metadata] = 'type' in fetch_result ? [[fetch_result], undefined] : [await video_check(fetch_result as any), fetch_result]
 
   const source = metadata && 'video_metadata' in metadata ? metadata.video_metadata : null
   let reupload_of
 
-  if (source) {
-    annotations = await video_check(source)
+  if (source)
     reupload_of = getVideoLinkTemp(source)
-  }
 
   if (body.index !== undefined && uid) {
     if (!metadata)

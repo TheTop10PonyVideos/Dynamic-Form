@@ -1,6 +1,6 @@
 import { BallotEntryField, Flag } from "./types";
 import { client_labels } from "./labels";
-import { manual_label } from "@/generated/prisma";
+import { manual_label, video_metadata } from "@/generated/prisma";
 import { getLabels } from "./data_cache";
 import { getEligibleRange } from "./util";
 
@@ -8,7 +8,10 @@ import { getEligibleRange } from "./util";
  * Server side checks of video metadata to determine eligibility. If a manual label flagis present, it will be the only one present unless include_all is true
  * @returns A list of flags for any that may apply to the video
  */
-export async function video_check(video_metadata: { upload_date: Date, duration: number | null, uploader: string, manual_label: manual_label | null }, include_all = false): Promise<Flag[]> {
+export async function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }, include_all = false): Promise<Flag[]> {
+    if (video_metadata.video_metadata)
+        return video_check(video_metadata.video_metadata as any)
+    
     const syncedLabels = await getLabels()
     const flags: Flag[] = []
 

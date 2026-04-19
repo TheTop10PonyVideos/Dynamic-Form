@@ -34,7 +34,7 @@ async function handler(req: NextRequest) {
 
     await Promise.all(actions)
 
-    return Response.json({ platform: fetch_result.platform, title: fetch_result.title } satisfies APIAnnotateVideoResponseBody)
+    return Response.json({ platform: fetch_result.platform, video_id: fetch_result.video_id, title: fetch_result.title } satisfies APIAnnotateVideoResponseBody)
 }
 
 export const POST = requireAuth(sendErrors(handler))

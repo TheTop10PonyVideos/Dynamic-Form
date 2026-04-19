@@ -103,11 +103,12 @@ UPDATE playlist_item p
 ALTER TABLE playlist_item DROP CONSTRAINT playlist_item_video_id_platform_fkey;
 ALTER TABLE playlist_item DROP COLUMN platform, DROP COLUMN video_id;
 
-ALTER TABLE ballot_item ADD COLUMN metadata_id BIGINT NOT NULL;
+ALTER TABLE ballot_item ADD COLUMN metadata_id BIGINT;
 UPDATE ballot_item b
 	SET metadata_id = v.id
 	FROM video_metadata v
 	WHERE v.video_id = b.video_id AND v.platform = b.platform;
+ALTER TABLE ballot_item ALTER COLUMN metadata_id SET NOT NULL;
 ALTER TABLE ballot_item DROP CONSTRAINT ballot_item_video_id_platform_fkey;
 ALTER TABLE ballot_item DROP COLUMN platform, DROP COLUMN video_id;
 
