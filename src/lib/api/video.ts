@@ -1,4 +1,4 @@
-import { Flag, VideoStatusSettings as VideoEligibilitySetting, VideoPlatform, VideoDataClient } from '@/lib/types';
+import { Flag, VideoDataClient } from '@/lib/types';
 import { label_key } from '../labels';
 
 
@@ -51,9 +51,9 @@ export async function updateLabels(label_updates: Record<label_key, Flag>) {
 
 export type APIAnnotateVideoRequestBody = {
     link: string
-    eligibility?: VideoEligibilitySetting
+    eligible?: boolean | null
     reason?: string
-    whitelisted?: boolean
+    searchable?: boolean
 }
 
 export type APIAnnotateVideoResponseBody = {
@@ -66,11 +66,11 @@ export type APIAnnotateVideoResponseBody = {
  * Annotate a video to override its auto assigned eligibility status and notes that are shown to the voters. 
  * @param link The link to the video
  * @param eligibility A FlagStatus or 'default' to signal that tnhe manual label shouldn't be used
- * @param whitelisted Whether the video should appear in search results
+ * @param searchable Whether the video should appear in search results
  * @param reason The reason for the eligibility annotation or source url if status is 'alternative'
  */
-export async function annotateVideo(link: string, eligibility: VideoEligibilitySetting, reason: string, whitelisted: boolean): Promise<APIAnnotateVideoResponseBody> {
-    const body = { link, eligibility, whitelisted, reason } satisfies APIAnnotateVideoRequestBody
+export async function annotateVideo(link: string, eligibility: boolean | null, reason: string, searchable?: boolean): Promise<APIAnnotateVideoResponseBody> {
+    const body = { link, eligible: eligibility, searchable, reason } satisfies APIAnnotateVideoRequestBody
 
     const res = await fetch('/api/pool/annotate_video', {
         method: 'POST',

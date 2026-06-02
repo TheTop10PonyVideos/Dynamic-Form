@@ -50,23 +50,22 @@ export function getVideoLinkTemp(data: { platform: string, video_id: string, upl
 
 /**
  * Truncates and transforms video metadata to only what the client needs
- * TODO: fix typing nightmare
- */
-export function toClientVideoMetadata(video_metadata: video_metadata & { video_metadata?: video_metadata | VideoDataClient | null }, strip_data = true): VideoDataClient | (Omit<video_metadata, 'id' | 'source'> & { link: string, video_metadata?: video_metadata }) {
+*/
+export function toClientVideoMetadata(video_metadata: video_metadata, strip_data = true): VideoDataClient | (Omit<video_metadata, 'id' | 'source'> & { link: string, video_metadata?: video_metadata & { link: string } }) {
     let clientReceivable: any
 
     if (strip_data)
-        clientReceivable = (({ whitelisted, duration, upload_date, recent, video_id, id, source, ...stripped }) => stripped)(video_metadata)
+        clientReceivable = (({ searchable, duration, upload_date, recent, video_id, id, source, ...stripped }) => stripped)(video_metadata)
     else
         clientReceivable = (({ id, source, ...stripped }) => stripped)(video_metadata)
 
     if (clientReceivable.manual_label) {
-        const { metadata_id, ...manual_annotation } = clientReceivable.manual_label as any
+        const { metadata_id, ...manual_annotation } = clientReceivable.manual_label
         clientReceivable.manual_label = manual_annotation
     }
 
     if (clientReceivable.video_metadata)
-        clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata as video_metadata & { video_metadata?: video_metadata }, strip_data)
+        clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata, strip_data)
 
     const withLink = { ...clientReceivable, link: getVideoLinkTemp(video_metadata) }
 

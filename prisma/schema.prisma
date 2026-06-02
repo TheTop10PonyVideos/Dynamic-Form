@@ -9,9 +9,9 @@ datasource db {
 }
 
 model manual_label {
-  label          String
-  content        String
+  reason         String?
   metadata_id    BigInt         @id
+  eligible       Boolean
   video_metadata video_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
 
@@ -43,7 +43,7 @@ model video_metadata {
   duration             Int?
   platform             String
   recent               Boolean
-  whitelisted          Boolean          @default(false)
+  searchable           Boolean?
   id                   BigInt           @id @default(autoincrement())
   source               BigInt?
   ballot_item          ballot_item[]

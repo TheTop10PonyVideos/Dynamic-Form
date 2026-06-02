@@ -201,7 +201,7 @@ async function from_youtube(url: URL, with_annotation: boolean) {
         duration: convert_iso8601_duration_to_seconds(iso8601_duration),
         platform: "YouTube",
         recent: upload_date >= getEligibleRange()[0],
-        whitelisted: false,
+        searchable: false,
         source: null
     } satisfies Omit<video_metadata, 'id'>
 
@@ -282,7 +282,7 @@ async function from_other(url: URL, with_annotation: boolean) {
         duration: response["duration"] || null,
         platform: site.charAt(0).toUpperCase() + site.slice(1),
         recent: upload_date >= getEligibleRange()[0],
-        whitelisted: false,
+        searchable: false,
         source: null
     } satisfies Omit<video_metadata, 'id'>
 

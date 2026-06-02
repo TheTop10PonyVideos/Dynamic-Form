@@ -1,6 +1,6 @@
 import { Prisma, video_metadata } from "@/generated/prisma";
 import { prisma } from "../prisma";
-import { VideoPlatform, VideoStatusSettings } from "../types";
+import { VideoPlatform } from "../types";
 import { adjustDate } from "../util";
 
 
@@ -39,19 +39,19 @@ export async function saveVideoMetadata(video_data: Omit<video_metadata, 'id'>) 
 }
 
 
-export async function annotateVideo(metadata_id: bigint, status: Exclude<VideoStatusSettings, "default" | "reupload">, annotation: string) {
+export async function annotateVideo(metadata_id: bigint, eligible: boolean, reason?: string) {
     await prisma.video_metadata.update({
         where: { id: metadata_id },
         data: {
             manual_label: {
                 upsert: {
                     create: {
-                        label: status,
-                        content: annotation
+                        eligible,
+                        reason
                     },
                     update: {
-                        label: status,
-                        content: annotation
+                        eligible,
+                        reason
                     }
                 }
             }
@@ -84,27 +84,16 @@ export async function setSource(reupload_id: bigint, original_id: bigint | null)
 }
 
 
-export async function updateWhitelist(metadata_id: bigint, whitelisted: boolean) {
+export async function updateSearchable(metadata_id: bigint, searchable: boolean) {
     await prisma.video_metadata.update({
         where: { id: metadata_id },
-        data: { whitelisted }
+        data: { searchable }
     })
 }
 
 
 export async function titleSearchMetadata(query: string, threshold = 0.6): Promise<video_metadata[]> {
-    const results: (video_metadata & {sim: number})[] = await prisma.$queryRaw`
-    WITH v AS (
-        SELECT *, word_similarity(${query}, title) AS sim
-        FROM video_metadata
-        WHERE recent AND whitelisted
-    )
-    SELECT *
-    FROM v
-    WHERE sim > ${threshold}
-    ORDER BY sim DESC
-    LIMIT 3;
+    return await prisma.$queryRaw`
+        SELECT title_search_metadata(${query}, ${threshold});
     `
-
-    return results.map(res => { const {sim, ...metadata} = res; return metadata })
 }
