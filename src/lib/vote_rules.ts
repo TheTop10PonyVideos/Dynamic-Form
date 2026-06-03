@@ -1,4 +1,4 @@
-import { BallotEntryField, Flag } from "./types";
+import { BallotEntryField, Flag, VideoDataClient } from "./types";
 import { client_labels } from "./labels";
 import { manual_label, video_metadata } from "@/generated/prisma";
 import { getLabels } from "./data_cache";
@@ -43,8 +43,8 @@ export async function video_check(video_metadata: video_metadata & { video_metad
             ...(include_all ? flags : []),
             {
                 name: "Manual Check",
-                type: video_metadata.manual_label.label as "eligible" | "ineligible",
-                details: video_metadata.manual_label.content,
+                type: video_metadata.manual_label.eligible ? "eligible" : "ineligible",
+                details: video_metadata.manual_label.reason,
                 trigger: "manual"
             } as Flag
         ] :
@@ -60,24 +60,26 @@ export async function video_check(video_metadata: video_metadata & { video_metad
 export function ballot_check(entries: BallotEntryField[], cli_labels: client_labels) {
     const uniqueVids = new Set<string>()
     const creatorCounts = new Map<string, number>()
-    const entryCopies = entries.map(e => ({ ...e, flags: [...e.flags] })) // Shallow-ish copy to avoid accumulating the same flags in entries
+    const entryCopies = entries.map(e => ({ ...e, flags: [...e.flags] })) // Shallow copy to avoid accumulating the same flags in entries
 
     for (const entry of entryCopies) {
         if (!entry.videoData)
             continue
 
-        const creator_id = `${entry.videoData.uploader}-${entry.videoData.platform}`
+        const entryData = (entry.videoData.video_metadata ? entry.videoData.video_metadata : entry.videoData) as any as VideoDataClient
 
-        if (uniqueVids.has(entry.videoData.link))
+        const creator_id = `${entryData.uploader}-${entryData.platform}`
+
+        if (uniqueVids.has(entryData.link))
             entry.flags.push(cli_labels.duplicate_votes)
         else
-            uniqueVids.add(entry.videoData.link)
+            uniqueVids.add(entryData.link)
 
         // Don't count creators from ineligible votes since some otherwise eligible votes may be flagged
         if (entry.flags.some(f => f.type === "ineligible"))
             continue
 
-        const newCount = (creatorCounts.get(entry.videoData.uploader) || 0) + 1
+        const newCount = (creatorCounts.get(entryData.uploader) || 0) + 1
         creatorCounts.set(creator_id, newCount)
     }
 
@@ -85,7 +87,9 @@ export function ballot_check(entries: BallotEntryField[], cli_labels: client_lab
         if (!entry.videoData)
             continue
 
-        const creator_id = `${entry.videoData.uploader}-${entry.videoData.platform}`
+        const entryData = (entry.videoData.video_metadata ? entry.videoData.video_metadata : entry.videoData) as any as VideoDataClient
+
+        const creator_id = `${entryData.uploader}-${entryData.platform}`
         const instances = creatorCounts.get(creator_id)!
 
         if (instances > 2 || instances === 2 && creatorCounts.size < 5)
