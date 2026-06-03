@@ -14,7 +14,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
     manual_label = undefined
 
   const [status, setStatus] = useState(manual_label?.type || "default")
-  const [whitelisted, setWhitelisted] = useState(videoItem.whitelisted)
+  const [searchable, setSearchable] = useState(videoItem.searchable)
   const [inputs, setInputs] = useState({ eligibility: manual_label?.details || "", source: videoItem.source_link })
 
   const inputType = status === "reupload" ? "source" : "eligibility"
@@ -31,8 +31,15 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
 
     if (inputType === 'source')
       await setReupload(link, inputs['source'])
-    else
-      await annotateVideo(link, status as VideoStatusSettings, inputs['eligibility'], whitelisted)
+    else {
+      if (searchable !== null)
+        await annotateVideo(
+          link,
+          { eligible: true, ineligible: false, default: null }[status]!,
+          inputs['eligibility'],
+          searchable || undefined
+        )
+    }
 
     setSelectedVideo(null)
   }
@@ -62,8 +69,8 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
 
         <div className={styles.overlayOptions}>
           <div>
-            <input id="whitelist_btn" type="checkbox" checked={whitelisted} onChange={e => setWhitelisted(e.target.checked)}/>
-            <label htmlFor="whitelist_btn">Whitelist</label>
+            <input id="set_searchable_btn" type="checkbox" checked={!!searchable} onChange={e => setSearchable(e.target.checked)}/>
+            <label htmlFor="set_searchable_btn">Show in search results</label>
           </div>
           <div>
             <input id="rbtn1" name="status" value="eligible" checked={status === "eligible"} type="radio" onChange={radioBtnChange}/>
@@ -119,7 +126,7 @@ function VideoTile({ i, item, onClick }: { i: number, item: VideoPoolItem, onCli
     <p className={styles.tile_details} style={{zIndex: 50 - i}}>
       <span style={{display: "flex", justifyContent: "space-between"}}>
         <b>{item.votes} vote{s && "s"}</b>
-        {item.whitelisted && <span className={styles.indicator}>☑️</span>}
+        {item.searchable && <span className={styles.indicator}>☑️</span>}
         {refFlag && <Image src={stampMap[refFlag.type].icon} alt="" width={18} height={18}/>}
       </span>
       {item.title}<br/><br/>

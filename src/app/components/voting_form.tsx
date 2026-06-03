@@ -79,11 +79,11 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
     setFocusIndex(field_index)
   }
 
-  const selectSearchResult = async (field_index: number, result_data: VideoDataClient) => {
+  const replaceFieldEntry = async (field_index: number, new_video: VideoDataClient) => {
     // Making a call to validate to get flags and save the vote
     setSearchResults([-1, []])
-    const field_flags = (await validate(result_data.link, field_index)).field_flags
-    updateField(field_index, { flags: field_flags, videoData: result_data, input: result_data.link })
+    const field_flags = (await validate(new_video.link, field_index)).field_flags
+    updateField(field_index, { flags: field_flags, videoData: new_video, input: new_video.link })
   }
 
   // Handler for changes to the ballot entry fields
@@ -170,30 +170,30 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
     <>
       <VoteCounter cli_labels={cli_labels} eligibleCount={eligible.length} uniqueCreatorCount={uniqueCreators}/>
       <form className={styles.form} onSubmit={submit} autoComplete="off">
-        { warning && warnOverlay(eligible.length, () => setWarning(false)) }
+        { warning && submitSub5Overlay(eligible.length, () => setWarning(false)) }
         <div className={styles.headerfield}>
           <label>Voting for The Top 10 Pony Videos of {months[votingMonth]}</label>
           <p>
             This form is made to make voting easier by displaying video details with each vote and by checking their preliminary eligibility in advance.<br/><br/>
             To submit your votes, click the <b>Export Votes</b> button at the bottom. This will forward all your votes to the <a className={styles.link} href="https://docs.google.com/forms/d/e/1FAIpQLSdVi1gUmI8c2nBnYde7ysN8ZJ79EwI5WSBTbHKqIgC7js0PYg/viewform">main Google Form</a> where you can then submit them.<br/><br/>
-            Note: Currently only basic checks are done, so be sure the videos&apos; content also aligns with the rules.<br/><br/>
+            Note: Most of the checks are automatic, so be sure the videos&apos; content also align with the rules.<br/><br/>
             Symbol Meanings:<br/>
-            ✅ = Eligible<br/>
+            ✅ = No issues detected<br/>
             ⚠️ = Maybe ineligible<br/>
             ❌ = Ineligible<br/><br/>
             If you aren&apos;t familiar with the rules or need any reminder, be sure to carefully read the full rules <a href="https://www.thetop10ponyvideos.com/voting-info#h.j2voxvq0owh8" className={styles.link}>here</a>.
           </p>
         </div>
-        {checkedEntries.map((field, i) =>
+        {checkedEntries.map((fieldData, i) =>
           <VoteField
             key={i}
             index={i}
-            voteData={field}
+            fieldData={fieldData}
             focused={i == focusIndex}
             searchResults={searchResults[0] == i ? searchResults[1] : undefined}
             onChanged={changed}
             onPaste={pasted}
-            onSearchSelection={selectSearchResult}
+            onEntryReplacement={replaceFieldEntry}
             setFocus={setFocus}
           />
         )}
@@ -215,7 +215,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
   )
 }
 
-function warnOverlay(votes: number, reset: () => void) {
+function submitSub5Overlay(votes: number, reset: () => void) {
   return (
     <div className={styles.mask}>
       <div className={styles.warning_prompt}>

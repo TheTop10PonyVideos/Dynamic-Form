@@ -110,11 +110,11 @@ export default function LabelsTab({ labelSettings }: Props) {
           <VoteField
             key={i}
             index={i}
-            voteData={field}
+            fieldData={field}
             focused={false}
             onChanged={voteFieldEdit}
             onPaste={pasted}
-            onSearchSelection={() => {}}
+            onEntryReplacement={() => {}}
             setFocus={() => {}}
           />
         )}
