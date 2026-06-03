@@ -16,7 +16,7 @@ interface Props {
 
 export default function VoteField({ index, fieldData, searchResults, focused, onChanged, onPaste, onEntryReplacement, setFocus }: Props) {
   const refFlag =
-    fieldData.flags.find(f => f.trigger === "manual") ||
+    fieldData.flags.find(f => f.trigger === "Manual Review") ||
     fieldData.flags.find(f => f.type === "ineligible") ||
     fieldData.flags.find(f => f.type === "maybe ineligible")
 
@@ -79,12 +79,16 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
               <Image src={stampMap[refFlag.type].icon} alt="" width={25} height={25} />
               <div className={styles.note}>
                 <h3>
-                  { `${refFlag.type.replace(/\b\w/g, c => c.toUpperCase())}${refFlag.trigger === "manual" ? " (Manually Checked)" : ""}` }
+                  { `${refFlag.type.replace(/\b\w/g, c => c.toUpperCase())}${refFlag.trigger === "Manual Review" ? " (Manually Checked)" : ""}` }
                 </h3>
 
-                <ul>
-                  {fieldData.flags.map((flag, i) => <li key={i}>{flag.details}</li>)}
-                </ul>
+                {
+                  // Annotations of videos being eligible can have empty details. This prevents an empty bullet point in that case
+                  refFlag.details &&
+                  <ul>
+                    {fieldData.flags.map((flag, i) => <li key={i}>{flag.details}</li>)}
+                  </ul>
+                }
 
               </div>
             </>

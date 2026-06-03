@@ -44,9 +44,9 @@ export async function video_check(video_metadata: video_metadata & { video_metad
             {
                 name: "Manual Check",
                 type: video_metadata.manual_label.eligible ? "eligible" : "ineligible",
-                details: video_metadata.manual_label.reason,
-                trigger: "manual"
-            } as Flag
+                details: video_metadata.manual_label.reason || "",
+                trigger: "Manual Review"
+            }
         ] :
         flags
 }

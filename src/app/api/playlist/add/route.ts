@@ -13,16 +13,16 @@ export async function POST(req: NextRequest) {
   if (!body.link || !body.playlist_id)
     return new Response(null, { status: 400 })
 
-  const metadata = await fetch_metadata(body.link)
+  const fetch_result = await fetch_metadata(body.link)
 
-  if ("type" in metadata)
-    return Response.json({ error: metadata.details })
+  if ("type" in fetch_result)
+    return Response.json({ error: fetch_result.details })
 
   if (!uid)
     return new Response()
 
   await getUser(uid, true)
-  await addPlaylistItem(uid, body.playlist_id, metadata)
+  await addPlaylistItem(uid, body.playlist_id, fetch_result)
 
-  return Response.json({metadata: toClientVideoMetadata(metadata) })
+  return Response.json({metadata: toClientVideoMetadata(fetch_result) })
 }

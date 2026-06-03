@@ -9,7 +9,7 @@ import Image from "next/image";
 import { annotateVideo, setReupload } from "@/lib/api/video";
 
 function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, setSelectedVideo: Dispatch<SetStateAction<VideoPoolItem | null>> }) {
-  let manual_label = videoItem.flags.find(f => f.trigger === "manual")
+  let manual_label = videoItem.flags.find(f => f.trigger === "Manual Review")
   if (manual_label?.type === "disabled")
     manual_label = undefined
 
@@ -90,7 +90,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
           } value={
             default_selected ?
               videoItem.flags
-                .filter(f => f.trigger !== "manual")
+                .filter(f => f.trigger !== "Manual Review")
                 .reduce((prev, cur) => prev + "- " + cur.details + "\n", "") ||
                 "No issues found" :
 
@@ -111,7 +111,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
 
 function VideoTile({ i, item, onClick }: { i: number, item: VideoPoolItem, onClick: (item: VideoPoolItem) => void }) {
   const refFlag =
-    item.flags.find(f => f.trigger === "manual" && f.type !== "disabled") ||
+    item.flags.find(f => f.trigger === "Manual Review" && f.type !== "disabled") ||
     item.flags.find(f => f.type === "ineligible") ||
     item.flags.find(f => f.type === "maybe ineligible")
 

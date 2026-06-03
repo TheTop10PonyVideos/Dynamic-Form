@@ -7,17 +7,15 @@ import { fetch_metadata } from "@/lib/external";
 
 async function handler(req: NextRequest) {
     const body: APIAnnotateVideoRequestBody = await req.json()
+    body.reason = body.reason?.trim() || undefined
 
     const fetch_result = await fetch_metadata(body.link, false)
 
     if ('type' in fetch_result)
         return new Response(fetch_result.details, { status: 404 })
 
-    if (
-        (body.eligible === null && body.reason) ||
-        (!body.eligible && !body.reason)
-    )
-        return new Response('Incompatible annotation and status pair', { status: 400 })
+    if (!body.eligible && !body.reason)
+        return new Response('Ineligible annotations must come with a reason', { status: 400 })
 
     const actions: Promise<any>[] = []
 
