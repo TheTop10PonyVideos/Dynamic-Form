@@ -199,7 +199,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
         )}
         <div className={styles.field}>
           <label>Contact Email, or Discord name, or Twitter, or Mastodon</label>
-          <div>
+          <div style={{margin: '0 15px'}}>
             Feel free to leave this blank, however, <b>including consistent contact info every time you vote helps us to recognize regular voters!</b>&nbsp; It also makes it possible to contact voters if there&apos;s an issue or question. <i>More information and privacy policy can be found here: <a href="https://www.thetop10ponyvideos.com/links-info-credits/privacy-policy">https://www.thetop10ponyvideos.com/links-info-credits/privacy-policy</a></i>
           </div>
           <div className={styles.input} style={{ color: "grey", fontSize: 14, pointerEvents: "none" }}>For privacy reasons, only enter contact info on the official form</div>

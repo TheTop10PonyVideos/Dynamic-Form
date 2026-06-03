@@ -14,7 +14,7 @@ async function handler(req: NextRequest) {
     if ('type' in fetch_result)
         return new Response(fetch_result.details, { status: 404 })
 
-    if (!body.eligible && !body.reason)
+    if (body.eligible === false && !body.reason)
         return new Response('Ineligible annotations must come with a reason', { status: 400 })
 
     const actions: Promise<any>[] = []
