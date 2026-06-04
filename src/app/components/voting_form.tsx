@@ -6,22 +6,21 @@ import styles from "../page.module.css";
 import { BallotEntryField, VideoDataClient } from "@/lib/types";
 import VoteCounter from "./vote_counter";
 import VoteField from "./vote_field";
-import { cliTestLink } from "@/lib/util";
+import { testLink } from "@/lib/util";
 import { removeBallotItem } from "@/lib/api/ballot";
 import { validate, videoSearch } from "@/lib/api/video";
-import { ballot_check } from "@/lib/vote_rules";
-import { client_labels } from "@/lib/labels";
+import { ballot_check, isEligible } from "@/lib/vote_rules";
 import Image from "next/image";
+import { labels } from "@/lib/labels";
 
 interface Props {
-  cli_labels: client_labels,
   initial_entries: BallotEntryField[],
   votingPeriod: [number, boolean]
 }
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: Props) {
+export default function VoteForm({ initial_entries, votingPeriod }: Props) {
   const [voteFields, setVoteFields] = useState<BallotEntryField[]>(initial_entries)
   const [warning, setWarning] = useState(false)
   const [searchResults, setSearchResults] = useState<[number, VideoDataClient[]]>([-1, []])
@@ -89,7 +88,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
   // Handler for changes to the ballot entry fields
   const changed = async (e: React.ChangeEvent<HTMLInputElement>, field_index: number) => {    
     const input = e.currentTarget.value.trim()
-    const isLink = cliTestLink(input, cli_labels)
+    const isLink = testLink(input)
 
     clearTimeout(inputTimeouts.current[field_index])
 
@@ -98,7 +97,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
       removeFieldSave(field_index)
     }
     else if (!isLink) {
-      updateField(field_index, { input: e.currentTarget.value, videoData: null, flags: [cli_labels.invalid_link] })
+      updateField(field_index, { input: e.currentTarget.value, videoData: null, flags: [labels.invalid_link] })
       removeFieldSave(field_index)
       if (input.length >= 2)
         inputTimeouts.current[field_index] = setTimeout(() => search(field_index, input), 500)
@@ -163,14 +162,14 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
   }
 
   // Ballot rules are checked in the client, here
-  const { uniqueCreators, eligible, checkedEntries } = ballot_check(voteFields, cli_labels)
-  const should_warn = eligible.length < 5
+  const checkedEntries = ballot_check(voteFields)
+  const eligibleCount = checkedEntries.filter(isEligible).length
 
   return (
     <>
-      <VoteCounter cli_labels={cli_labels} eligibleCount={eligible.length} uniqueCreatorCount={uniqueCreators}/>
+      <VoteCounter eligibleCount={eligibleCount}/>
       <form className={styles.form} onSubmit={submit} autoComplete="off">
-        { warning && submitSub5Overlay(eligible.length, () => setWarning(false)) }
+        { warning && submitSub5Overlay(eligibleCount, () => setWarning(false)) }
         <div className={styles.headerfield}>
           <label>Voting for The Top 10 Pony Videos of {months[votingMonth]}</label>
           <p>
@@ -204,7 +203,7 @@ export default function VoteForm({ cli_labels, initial_entries, votingPeriod }: 
           </div>
           <div className={styles.input} style={{ color: "grey", fontSize: 14, pointerEvents: "none" }}>For privacy reasons, only enter contact info on the official form</div>
         </div>
-        <button type="submit" value={should_warn ? "warn" : "export" } className={`${styles.exportButton} ${formOpen ? (eligible.length ? styles.submitButton : styles.disabledSubmitButton2) : styles.disabledSubmitButton}`}>
+        <button type="submit" value={eligibleCount < 5 ? "warn" : "export" } className={`${styles.exportButton} ${formOpen ? (eligibleCount ? styles.submitButton : styles.disabledSubmitButton2) : styles.disabledSubmitButton}`}>
           Export Votes
           <div className={styles.disabledExportNote}>
             Come back during the first week of {months[(votingMonth + 1) % 12]} when the voting form opens!

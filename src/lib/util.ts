@@ -2,7 +2,7 @@
 
 import { video_metadata } from "@/generated/prisma";
 import { Flag, VideoDataClient, VideoPlatform } from "./types";
-import { client_labels, labels } from "./labels";
+import { labels } from "./labels";
 
 /*const platform_bases = {
     "YouTube": "www.youtube.com/watch?v=_id_",
@@ -85,18 +85,6 @@ export function testLink(input: string): false | Flag[] {
 
     if (validLink.test(input)) return []
     if (link.test(input)) return [labels.unsupported_site]
-    return false
-}
-
-/**
- * Same as testLink, except that labels passed from server side rendering are used instead
- */
-export function cliTestLink(input: string, cli_labels: client_labels): false | Flag[] {
-    input = input.trim()
-    if (!input) return false
-
-    if (validLink.test(input)) return []
-    if (link.test(input)) return [cli_labels.unsupported_site]
     return false
 }
 

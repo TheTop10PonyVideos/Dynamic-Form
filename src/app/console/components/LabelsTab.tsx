@@ -8,7 +8,7 @@ import { testLink } from "@/lib/util";
 import { validate, updateLabels } from "@/lib/api/video";
 import { BallotEntryField, Flag } from "@/lib/types";
 import { label_key, labels, stampMap } from "@/lib/labels";
-import { ballot_check } from "@/lib/vote_rules";
+import { ballot_check, isEligible } from "@/lib/vote_rules";
 
 interface Props {
   labelSettings: Record<label_key, Flag>
@@ -86,9 +86,10 @@ export default function LabelsTab({ labelSettings }: Props) {
   const activeLabels = new Set<string>()
 
   // Using client bundled labels here is fine since it's used only to determine active labels
-  const { uniqueCreators, eligible, checkedEntries } = ballot_check(voteFields, labels)
+  const checkedEntries = ballot_check(voteFields)
+  const eligibleCount = checkedEntries.filter(isEligible).length
 
-  if (eligible.length < 5)
+  if (eligibleCount < 5)
     activeLabels.add(labels.sub_5_votes.trigger)
 
   // Apply label configuration fields for previewing
@@ -157,7 +158,7 @@ export default function LabelsTab({ labelSettings }: Props) {
                 className={styles.iconButton}
                 onClick={() => {
                   const t = label.type
-                  labelChange(labelKey as label_key, { type: t === "ineligible" && "maybe ineligible" || t === "maybe ineligible" && "disabled" || "ineligible"})
+                  labelChange(labelKey as label_key, { type: t === "ineligible" && "maybe ineligible" || "ineligible"})
                 }}
               >
                 <Image

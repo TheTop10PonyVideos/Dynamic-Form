@@ -1,7 +1,7 @@
 // Verbatim
 
 import { video_metadata } from "@/generated/prisma"
-import { flagTypes } from "./labels"
+import { eligibilityType } from "./labels"
 
 export type VideoPlatform =
     "YouTube" |
@@ -43,7 +43,7 @@ export type VideoStatusSettings = "eligible" | "default" | "ineligible"
  */
 export type Flag = {
     name: string
-    type: flagTypes
+    type: eligibilityType
     details: string
     trigger: string
 }

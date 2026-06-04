@@ -1,4 +1,3 @@
-import { getLabels } from "@/lib/data_cache";
 import Console from "./components/Console";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -11,7 +10,5 @@ export default async function ConsolePage() {
   if (uid !== process.env.OPERATOR)
     redirect('/login')
 
-  const label_configs = await getLabels()
-
-  return <Console labelConfigs={label_configs} />
+  return <Console/>
 }

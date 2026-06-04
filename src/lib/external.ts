@@ -1,11 +1,11 @@
 // Methods for extracting video metadata from external sources
 
 import { spawn } from "child_process"
-import { YTDLPItems, Flag, VideoPlatform, VideoPlatforms } from "./types"
+import { YTDLPItems, Flag, VideoPlatform } from "./types"
 import { getVideoMetadata, saveVideoMetadata } from "./queries/video"
-import { manual_label, video_metadata } from "@/generated/prisma"
-import { getLabels } from "./data_cache"
+import { video_metadata } from "@/generated/prisma"
 import { getEligibleRange } from "./util"
+import { labels } from "./labels"
 
 // Variants of youtube domains that might be used
 const youtube_domains = ["m.youtube.com", "www.youtube.com", "youtube.com", "youtu.be"]
@@ -172,7 +172,7 @@ async function from_youtube(url: URL, with_annotation: boolean) {
     const video_id = extract_yt_id(url)
 
     if (!video_id)
-        return (await getLabels()).missing_id
+        return labels.missing_id
 
     const cached = await getVideoMetadata(video_id, "YouTube", with_annotation)
 
@@ -185,7 +185,7 @@ async function from_youtube(url: URL, with_annotation: boolean) {
     const response_item = response_data["items"][0]
 
     if (!response_item)
-        return (await getLabels()).unavailable
+        return labels.unavailable
 
     const snippet = response_item["snippet"]
     const iso8601_duration = response_item["contentDetails"]["duration"]
@@ -215,12 +215,12 @@ async function from_other(url: URL, with_annotation: boolean) {
     let netloc = /([^.]+\.[^.]+)$/.exec(url.hostname)![1]
 
     if (!(accepted_domains.includes(netloc)))
-        return (await getLabels()).unsupported_site
+        return labels.unsupported_site
 
     const video_id = extract_ytdl_id(url)
 
     if (!video_id)
-        return (await getLabels()).missing_id
+        return labels.missing_id
 
     const site = get_nonyt_site_name(url)
 
@@ -238,7 +238,7 @@ async function from_other(url: URL, with_annotation: boolean) {
             response = response["entries"][0]
     } catch (error) {
         console.log(error)
-        return (await getLabels()).unavailable
+        return labels.unavailable
     }
 
     /* Some urls might have specific issues that should
