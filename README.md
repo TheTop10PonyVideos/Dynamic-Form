@@ -1,27 +1,27 @@
-# Smart-Voting-Form
+# Dynamic Voting Form
 A web application with a web front-end for users to vote on videos, and a backend for storing ballots and fetching video information.
 
 ## Prerequisites
 * Install [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).
-* Ensure yt-dlp 2025.05.22 is installed. The voting form application uses it (via subprocess calls) to look up video information.
+* Ensure yt-dlp 2026.03.17 is installed. The voting form application uses it (via subprocess calls) to look up video information.
 * Get a YouTube Data API key. To obtain one, you need to create a project in the [Google Cloud console](https://console.cloud.google.com), add YouTube Data API v3 to it, and create credentials for the YouTube Data API. When asked what data you'll be accessing, select "Public data" (the API is only needed for video data, which is public). This will give you an API key. If you've already done this part, you can always look up your API key in Google Cloud console -> APIs & Services -> Credentials.
 * Optionally, create and save a `cookies.txt` file containing a twitter session in the project root folder. yt-dlp requires this for some posts.
 
 ## Installation and setup
-* Clone the Smart-Voting-Form repository:
+* Clone the Dynamic-Form repository:
 
-      git clone https://github.com/Brambles-cat/Smart-Voting-Form.git
+      git clone https://github.com/TheTop10PonyVideos/Dynamic-Form.git
 
 * Inside the cloned repo directory, install project dependencies:
 
-      cd Smart-Voting-Form
+      cd Dynamic-Form
       npm install
 
 * Create new `.env` environment file from the provided template:
 
       cp .env.dist .env
 
-* The Smart-Voting-Form uses a local Postgres database to store votes and video information. You need to run this before running the voting form application, and configure the application to use it. To do this:
+* The Dynamic-Form uses a local Postgres database to store votes and video information. You need to run this before running the voting form application, and configure the application to use it. To do this:
 
   1. Run the Prisma database server in a separate terminal:
 
@@ -33,7 +33,7 @@ A web application with a web front-end for users to vote on videos, and a backen
 
         DATABASE_URL="prisma+postgres://localhost:51213/?api_key=eyJkYXRhYmFzZVV...
 
-    Copy and paste the URL (including the `DATABASE_URL=` environment variable specifier) to the `.env` file, replacing the blank `DATABASE_URL` variable there. The Smart-Voting-Form application will use this variable to connect to the database.
+    Copy and paste the URL (including the `DATABASE_URL=` environment variable specifier) to the `.env` file, replacing the blank `DATABASE_URL` variable there. The Dynamic-Form application will use this variable to connect to the database.
 
 * Add your YouTube Data API v3 key to the `.env` file:
 
@@ -41,7 +41,7 @@ A web application with a web front-end for users to vote on videos, and a backen
 
   This is needed for the voting form to look up video data when users enter video links.
 
-* Start the webserver for the Smart-Voting-Form application:
+* Start the webserver for the Dynamic-Form application:
 
       npx next dev
 
