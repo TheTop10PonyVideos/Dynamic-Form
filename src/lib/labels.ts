@@ -16,8 +16,10 @@ export type label_key =
 	"unavailable" |
 	"zero_votes" |
 	"sub_5_votes" |
-	"wrong_period" |
-	"edge_date" |
+	"too_new" |
+	"too_old" |
+	"new_edge" |
+	"old_edge" |
 	"too_short" |
 	"maybe_too_short" |
 	"no_simping" |
@@ -34,11 +36,13 @@ export let labels: Record<label_key, Flag> = {
 	unavailable:      { name: 'Unavailable video',  type: 'ineligible', 	  trigger: 'Empty metadata response',     details: 'Video is not public or is unavailable' },
 	zero_votes:		  { name: 'No votes',			type: 'ineligible',		  trigger: 'Empty ballot',				  details: 'At least 1 eligible vote required to submit' },
 	sub_5_votes:      { name: '1a',                 type: 'maybe ineligible', trigger: '<5 eligible videos',          details: 'Votes will be weighted when fewer than 5 are eligible' },
-	wrong_period:     { name: '2a',                 type: 'ineligible', 	  trigger: 'Video too old or new',        details: 'Vote for last month\'s videos based on your own time zone' },
-	edge_date:		  { name: '2a',					type: 'maybe ineligible', trigger: 'Video may be too old or new', details: 'Vote for last month\'s videos based on your own time zone' },
+	too_new:     	  { name: '2a',                 type: 'ineligible', 	  trigger: 'Video too new',        		  details: 'Too new: Vote for last month\'s videos based on your own time zone' },
+	too_old:     	  { name: '2a',                 type: 'ineligible', 	  trigger: 'Video too old',		          details: 'Too old: Vote for last month\'s videos based on your own time zone' },
+	new_edge:		  { name: '2a',					type: 'maybe ineligible', trigger: 'Video may be too new', 		  details: 'Possibly too new: Vote for last month\'s videos based on your own time zone' },
+	old_edge:		  { name: '2a',					type: 'maybe ineligible', trigger: 'Video may be too old', 		  details: 'Possibly too old: Vote for last month\'s videos based on your own time zone' },
 	too_short:        { name: '4a',                 type: 'ineligible', 	  trigger: '<30 second video',            details: 'Short length: Videos must be 30 seconds or longer not including intros/outros/credits/etc' },
 	maybe_too_short:  { name: '4a',                 type: 'maybe ineligible', trigger: '<=45 second video',           details: 'Short length: Videos must be 30 seconds or longer not including intros/outros/credits/etc' },
-	no_simping:       { name: '5a',                 type: 'ineligible', 	  trigger: '>2 votes of same creator',	  details: 'You can include up to two videos from a given channel/creator, but no more.' },
+	no_simping:       { name: '5a',                 type: 'ineligible', 	  trigger: '>2 votes of same creator',	  details: 'You can include up to two videos from a given channel/creator, but no more' },
 	unsupported_site: { name: '1c',                 type: 'ineligible', 	  trigger: 'Unsupported platform link',   details: 'Currently allowed platforms: Bilibili, Bluesky, Dailymotion, Newgrounds, Odysee, Pony.Tube, ThisHorsie.Rocks, Tiktok, Twitter/X, Vimeo, and YouTube. This list is likely to change over time' },
 	littleshy_vid:    { name: '5d',                 type: 'ineligible', 	  trigger: 'Littleshy video',             details: 'Don\'t vote for videos from the current host\'s channel, LittleshyFiM' }
 }

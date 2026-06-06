@@ -16,15 +16,14 @@ export async function video_check(video_metadata: video_metadata & { video_metad
     const upload_date = video_metadata.upload_date
     const [earliest, latest] = getEligibleRange()
 
-    if (upload_date >= earliest && upload_date <= latest) {
-        const temp = new Date(upload_date)
-        temp.setDate(temp.getDate() + (temp.getDate() < 10 ? 1 : -1))
-        
-        if (temp < earliest || temp > latest)
-            flags.push(labels.edge_date)
-    }
-    else
-        flags.push(labels.wrong_period)
+    if (upload_date > latest)
+        flags.push(labels.too_new)
+    else if (upload_date === latest)
+        flags.push(labels.new_edge)
+    else if (upload_date === earliest)
+        flags.push(labels.old_edge)
+    else if (upload_date < earliest)
+        flags.push(labels.too_old)
 
     if (video_metadata.duration !== null) {
         if (video_metadata.duration < 30)
