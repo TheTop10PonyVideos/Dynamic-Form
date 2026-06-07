@@ -16,6 +16,10 @@ SELECT cron.schedule_in_database(
 -- In form database
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+ALTER DATABASE smols_form
+	SET pg_trgm.similarity_threshold = 0.6;
+
+
 CREATE TABLE IF NOT EXISTS "user" (
 	id TEXT PRIMARY KEY
 );
@@ -38,9 +42,14 @@ CREATE TABLE IF NOT EXISTS video_metadata (
 	CHECK (source <> id)
 );
 
-CREATE INDEX IF NOT EXISTS trgm_idx ON video_metadata
-USING GIN (title gin_trgm_ops)
-WHERE recent AND searchable;
+CREATE INDEX IF NOT EXISTS title_trgm_idx ON video_metadata
+	USING GIN (title gin_trgm_ops)
+	WHERE recent AND searchable;
+
+CREATE INDEX IF NOT EXISTS uploader_trgm_idx ON video_metadata
+	USING GIN (uploader gin_trgm_ops)
+	WHERE recent AND searchable;
+
 
 CREATE TABLE IF NOT EXISTS ballot_item (
 	user_id TEXT NOT NULL,
@@ -87,9 +96,12 @@ CREATE TABLE IF NOT EXISTS manual_label (
 	)
 );
 
-CREATE OR REPLACE FUNCTION title_search_metadata(
+
+-- Changes from previous version
+DROP FUNCTION title_search_metadata;
+
+CREATE OR REPLACE FUNCTION video_search(
 	q TEXT,
-	threshold REAL DEFAULT 0.6,
 	lim INT DEFAULT 3
 )
 RETURNS SETOF video_metadata
@@ -97,52 +109,23 @@ LANGUAGE sql
 STABLE
 AS $$
     WITH vm_score AS (
-        SELECT vm, word_similarity(q, title) AS sim
+        SELECT vm, GREATEST(word_similarity(q, title), word_similarity(q, uploader)) AS sim
         FROM video_metadata vm
-        WHERE recent AND searchable
+        WHERE recent
+			AND searchable
+			AND (q <% title OR q <% uploader)
     )
     SELECT (vm).*
     FROM vm_score
-    WHERE sim > threshold
     ORDER BY sim DESC
     LIMIT lim;
 $$;
 
--- Changes from previous version
-ALTER TABLE video_metadata
-	ALTER COLUMN whitelisted DROP NOT NULL,
-	ALTER COLUMN whitelisted DROP DEFAULT;
+ALTER INDEX trgm_idx RENAME TO title_trgm_idx;
 
-ALTER TABLE video_metadata
-	RENAME COLUMN whitelisted TO searchable;
+CREATE INDEX IF NOT EXISTS uploader_trgm_idx ON video_metadata
+	USING GIN (uploader gin_trgm_ops)
+	WHERE recent AND searchable;
 
-UPDATE video_metadata
-	SET searchable = NULL
-	WHERE NOT searchable;
-
-
-ALTER TABLE manual_label
-	ADD COLUMN eligible BOOL;
-
-UPDATE manual_label
-	SET eligible = (label = 'eligible');
-
-ALTER TABLE manual_label
-	ALTER COLUMN eligible
-	SET NOT NULL;
-
-ALTER TABLE manual_label
-	DROP COLUMN label;
-
-ALTER TABLE manual_label
-	RENAME content TO reason;
-
-ALTER TABLE manual_label
-	ALTER COLUMN reason
-	DROP NOT NULL;
-
-ALTER TABLE manual_label
-	ADD CHECK (
-		eligible OR
-		(reason IS NOT NULL AND length(trim(reason)) > 0)
-	);
+ALTER DATABASE smols_form
+	SET pg_trgm.similarity_threshold = 0.6;

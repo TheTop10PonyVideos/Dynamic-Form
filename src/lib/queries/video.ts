@@ -92,9 +92,9 @@ export async function updateSearchable(metadata_id: bigint, searchable: boolean)
 }
 
 
-export async function titleSearchMetadata(query: string, threshold = 0.6): Promise<video_metadata[]> {
+export async function titleSearchMetadata(query: string): Promise<video_metadata[]> {
     return await prisma.$queryRaw`
         SELECT *
-        FROM title_search_metadata(${query}, ${threshold});
+        FROM video_search(${query});
     `
 }
