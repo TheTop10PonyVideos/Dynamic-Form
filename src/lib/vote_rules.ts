@@ -48,9 +48,11 @@ export async function video_check(video_metadata: video_metadata & { video_metad
         flags
 }
 
-const ballotViolations = [
+const priorityLabels = [
     labels.duplicate_votes,
-    labels.no_simping
+    labels.no_simping,
+    labels.too_new, labels.new_edge,
+    labels.too_old, labels.old_edge
 ]
 
 /**
@@ -101,12 +103,12 @@ export function ballot_check(entries: BallotEntryField[]) {
         if (!manualAnnotation)
             continue
 
-        // Ballot violations take priority over eligible manual annotations, and manual annotations should hide all automatic ones
-        const entryViolations = entry.flags.filter(f => ballotViolations.includes(f))
+        // Ballot and date violations take priority over eligible manual annotations, and manual annotations should hide all automatic ones
+        const entryViolations = entry.flags.filter(f => priorityLabels.includes(f))
 
         if (entryViolations.length) {
             manualAnnotation.details = `[Eligible] ${manualAnnotation.details}`
-            manualAnnotation.type = 'ineligible'
+            manualAnnotation.type = entryViolations[0].type
             manualAnnotation.trigger = 'Overridden Manual Review'
             entry.flags = [...entryViolations, manualAnnotation]
         }
