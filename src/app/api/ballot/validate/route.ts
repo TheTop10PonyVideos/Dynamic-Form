@@ -1,9 +1,12 @@
-import { fetch_metadata } from '@/lib/external'
+import { fetch_metadata, sendCandidateToBot } from '@/lib/external'
 import { removeBallotItem, setBallotItem } from '@/lib/queries/ballot'
 import { video_check } from '@/lib/vote_rules'
 import { NextRequest } from 'next/server'
 import { APIValidateRequestBody, APIValidateResponseBody } from '@/lib/api/video'
 import { getVideoLinkTemp, toClientVideoMetadata } from '@/lib/util'
+import { getNumVotes } from '@/lib/queries/video'
+import { labels } from '@/lib/labels'
+import { VideoDataClient } from '@/lib/types'
 
 // Route for checking an entry in the ballot against the rules, and saving its position
 export async function POST(req: NextRequest) {
@@ -23,14 +26,29 @@ export async function POST(req: NextRequest) {
   if (source)
     reupload_of = getVideoLinkTemp(source)
 
+  const sendAllData = (req.nextUrl.searchParams.get('all_data') || 'false').toLowerCase() === 'true'
+  const returnData = metadata && toClientVideoMetadata(metadata, !sendAllData)
+  const responseBody: APIValidateResponseBody = { field_flags: annotations, video_data: returnData, reupload_of }
+
   if (body.index !== undefined && uid) {
     if (!metadata)
       removeBallotItem(uid, body.index!)
-    else
+    else {
       await setBallotItem(uid, body.index!, metadata.id)
-  }
-  const all_data = (req.nextUrl.searchParams.get('all_data') || 'false').toLowerCase() === 'true'
-  const return_data = metadata && toClientVideoMetadata(metadata, !all_data)
 
-  return Response.json({ field_flags: annotations, video_data: return_data, reupload_of } satisfies APIValidateResponseBody)
+      // If a non reviewed video gets two votes, send it to the bot to determine whether it should appear in search results
+      if (
+        metadata.searchable === null &&
+        !annotations.includes(labels.too_old) &&
+        await getNumVotes(metadata.id) >= 2
+      ) {
+        const restructured: any = { ...returnData as VideoDataClient, annotations: annotations }
+        restructured['video_id'] = metadata.video_id
+
+        sendCandidateToBot(restructured)
+      }
+    }
+  }
+
+  return Response.json(responseBody)
 }

@@ -97,13 +97,7 @@ CREATE TABLE IF NOT EXISTS manual_label (
 );
 
 
--- Changes from previous version
-DROP FUNCTION title_search_metadata;
-
-CREATE OR REPLACE FUNCTION video_search(
-	q TEXT,
-	lim INT DEFAULT 3
-)
+CREATE OR REPLACE FUNCTION video_search(q TEXT, lim INT DEFAULT 3)
 RETURNS SETOF video_metadata
 LANGUAGE sql
 STABLE
@@ -121,11 +115,13 @@ AS $$
     LIMIT lim;
 $$;
 
-ALTER INDEX trgm_idx RENAME TO title_trgm_idx;
 
-CREATE INDEX IF NOT EXISTS uploader_trgm_idx ON video_metadata
-	USING GIN (uploader gin_trgm_ops)
-	WHERE recent AND searchable;
-
-ALTER DATABASE smols_form
-	SET pg_trgm.similarity_threshold = 0.6;
+CREATE OR REPLACE FUNCTION get_video_votes(m_id BIGINT)
+RETURNS INT
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT COUNT(DISTINCT user_id)
+	FROM ballot_item
+		WHERE metadata_id = m_id;
+$$;

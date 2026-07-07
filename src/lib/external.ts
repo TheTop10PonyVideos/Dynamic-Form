@@ -1,11 +1,12 @@
 // Methods for extracting video metadata from external sources
 
 import { spawn } from "child_process"
-import { YTDLPItems, Flag, VideoPlatform } from "./types"
+import { YTDLPItems, VideoPlatform, VideoDataClient, Flag } from "./types"
 import { getVideoMetadata, saveVideoMetadata } from "./queries/video"
 import { video_metadata } from "@/generated/prisma"
 import { getEligibleRange } from "./util"
 import { labels } from "./labels"
+import { constants, createWriteStream, openSync, WriteStream } from "fs"
 
 // Variants of youtube domains that might be used
 const youtube_domains = ["m.youtube.com", "www.youtube.com", "youtube.com", "youtu.be"]
@@ -45,7 +46,7 @@ const site_names: Record<string, string> = {
  * with multiple videos, such as https://x.com/_Maka_11/status/1790185560805683463/video/1
  * which contains a post id and an index
  */
-export function extract_ytdl_id(url: URL) {
+function extract_ytdl_id(url: URL) {
     return url.pathname.replace(/^\/*|\/*$/, '')
 }
 
@@ -88,16 +89,7 @@ function extract_yt_id(url: URL) {
     return match?.[1]
 }
 
-/**
- * Given any video URL, extracts the video id from it.
- * 
- * Returns null if no id can be extracted.
- */
-export function extract_video_id(url: URL) {
-    return youtube_domains.includes(url.hostname) ? extract_yt_id(url) : extract_ytdl_id(url)
-}
-
-export function get_nonyt_site_name(url: URL) {
+function get_nonyt_site_name(url: URL) {
     const host = /\.?([^\.]+)\.[^\.]+$/.exec(url.hostname)![1]
     return site_names[host] ?? host[0].toUpperCase() + host.slice(1)
 }
@@ -201,7 +193,7 @@ async function from_youtube(url: URL, with_annotation: boolean) {
         duration: convert_iso8601_duration_to_seconds(iso8601_duration),
         platform: "YouTube",
         recent: upload_date >= getEligibleRange()[0],
-        searchable: false,
+        searchable: null,
         source: null
     } satisfies Omit<video_metadata, 'id'>
 
@@ -282,7 +274,7 @@ async function from_other(url: URL, with_annotation: boolean) {
         duration: response["duration"] || null,
         platform: site.charAt(0).toUpperCase() + site.slice(1),
         recent: upload_date >= getEligibleRange()[0],
-        searchable: false,
+        searchable: null,
         source: null
     } satisfies Omit<video_metadata, 'id'>
 
@@ -300,4 +292,33 @@ export async function fetch_metadata(url_str: string, with_annotation = false) {
 
     const url = new URL(url_str)
     return youtube_domains.includes(url.hostname) ? from_youtube(url, with_annotation) : from_other(url, with_annotation)
+}
+
+let writeStream: WriteStream | null = null
+
+// Will mainly be caused by the reader closing under normal circumstances
+function onPipeError(e: Error) {
+    console.log('Disconnected from discord bot')
+    writeStream = null
+}
+
+/**
+ * Open the named pipe created by the discord bot process in order to send video search candidates
+ */
+export function connectPipe() {
+    if (writeStream)
+        return
+
+    const fd = openSync('/tmp/horse_vid_candidates', constants.O_WRONLY | constants.O_NONBLOCK)
+    writeStream = createWriteStream('', { fd })
+    console.log('Connected to discord bot')
+    writeStream.addListener('error', onPipeError)
+}
+
+/**
+ * Sends a video search result candidate to the discord bot
+ */
+export function sendCandidateToBot(videoData: VideoDataClient & { annotations: Flag[], video_id: string }) {
+    if (writeStream)
+        writeStream.write(JSON.stringify(videoData) + '\n')
 }

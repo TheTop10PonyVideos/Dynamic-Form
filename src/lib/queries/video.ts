@@ -34,6 +34,12 @@ export async function getVideoMetadata(id: string, platform: VideoPlatform, with
 }
 
 
+export async function getNumVotes(id: bigint) {
+    const result: any = await prisma.$queryRaw`SELECT get_video_votes(${id}) AS votes;`
+    return result[0].votes;
+}
+
+
 export async function saveVideoMetadata(video_data: Omit<video_metadata, 'id'>) {
     return await prisma.video_metadata.create({ data: video_data })
 }
