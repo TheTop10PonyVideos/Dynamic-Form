@@ -6,7 +6,7 @@ async function handler() {
     const pool = await getPool()
     const withChecks = pool.map(v => ({
         ...v,
-        flags: video_check(v, true),
+        flags: video_check(v),
         upload_date: v.upload_date.toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',

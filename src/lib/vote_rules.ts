@@ -7,10 +7,10 @@ import { getEligibleRange } from "./util";
  * Server side checks of video metadata to determine eligibility. If a manual label flagis present, it will be the only one present unless include_all is true
  * @returns A list of flags for any that may apply to the video
  */
-export function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }, include_all = false): Flag[] {
+export function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }): Flag[] {
     if (video_metadata.video_metadata)
         return video_check(video_metadata.video_metadata as any)
-    
+
     const flags: Flag[] = []
 
     const upload_date = video_metadata.upload_date
@@ -37,7 +37,7 @@ export function video_check(video_metadata: video_metadata & { video_metadata?: 
 
     return video_metadata.manual_label ?
         [
-            ...(include_all ? flags : []),
+            ...flags,
             {
                 name: "Manual Check",
                 type: video_metadata.manual_label.eligible ? "eligible" : "ineligible",
@@ -53,7 +53,7 @@ const priorityLabels = [
     labels.no_simping,
     labels.too_new, labels.new_edge,
     labels.too_old, labels.old_edge
-]
+].map(l => l.trigger)
 
 /**
  * Client side checks for ballot eligibility rules
@@ -104,13 +104,13 @@ export function ballot_check(entries: BallotEntryField[]) {
             continue
 
         // Ballot and date violations take priority over eligible manual annotations, and manual annotations should hide all automatic ones
-        const entryViolations = entry.flags.filter(f => priorityLabels.includes(f))
+        const priorityViolations = entry.flags.filter(f => priorityLabels.includes(f.trigger))
 
-        if (entryViolations.length) {
+        if (priorityViolations.length) {
             manualAnnotation.details = `[Eligible] ${manualAnnotation.details}`
-            manualAnnotation.type = entryViolations[0].type
+            manualAnnotation.type = priorityViolations[0].type
             manualAnnotation.trigger = 'Overridden Manual Review'
-            entry.flags = [...entryViolations, manualAnnotation]
+            entry.flags = [...priorityViolations, manualAnnotation]
         }
         else
             entry.flags = [manualAnnotation]
