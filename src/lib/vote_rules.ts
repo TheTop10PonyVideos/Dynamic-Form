@@ -7,7 +7,7 @@ import { getEligibleRange } from "./util";
  * Server side checks of video metadata to determine eligibility. If a manual label flagis present, it will be the only one present unless include_all is true
  * @returns A list of flags for any that may apply to the video
  */
-export async function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }, include_all = false): Promise<Flag[]> {
+export function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }, include_all = false): Flag[] {
     if (video_metadata.video_metadata)
         return video_check(video_metadata.video_metadata as any)
     
@@ -18,9 +18,9 @@ export async function video_check(video_metadata: video_metadata & { video_metad
 
     if (upload_date > latest)
         flags.push(labels.too_new)
-    else if (upload_date === latest)
+    else if (upload_date.toDateString() === latest.toDateString())
         flags.push(labels.new_edge)
-    else if (upload_date === earliest)
+    else if (upload_date.toDateString() === earliest.toDateString())
         flags.push(labels.old_edge)
     else if (upload_date < earliest)
         flags.push(labels.too_old)

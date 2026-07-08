@@ -20,16 +20,14 @@ export default async function Home() {
   const initial_entries: any[] = Array.from({ length: 10 }, () => ({ flags: [], videoData: null, input: "" }))
   dataItems.forEach(item => initial_entries[item.ballot_index].videoData = item)
 
-  await Promise.all(
-      initial_entries.map(async entry => {
-      if (!entry.videoData)
-        return
+  initial_entries.map(entry => {
+    if (!entry.videoData)
+      return
 
-      entry.flags = await video_check(entry.videoData)
-      entry.videoData = toClientVideoMetadata(entry.videoData)
-      entry.input = entry.videoData.link
-    })
-  )
+    entry.flags = video_check(entry.videoData)
+    entry.videoData = toClientVideoMetadata(entry.videoData)
+    entry.input = entry.videoData.link
+  })
 
   return (
     <div className={styles.page}>
