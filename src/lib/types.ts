@@ -54,9 +54,8 @@ export type BallotEntryField = {
 
 export type CreatorDisplayData = {
     channelURL: string
-    profileImgURL: string
+    profileImgURL: string | null
     channelName: string
-    latestActiveDate: Date
 }
 
 export type YTDLPItems = {

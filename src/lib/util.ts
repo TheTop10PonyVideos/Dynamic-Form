@@ -1,36 +1,12 @@
 // A random assortent of helper functions that are needed in multiple areas of the project
 
-import { creator, manual_label, video_metadata, video_platform } from "@/generated/prisma";
-import { Annotation, BaseFetchResult, FetchResult, Optional, VideoDataClient } from "./types";
+import { video_platform } from "@/generated/prisma";
+import { Annotation, FetchResult, Optional, VideoDataClient } from "./types";
 import { annotations } from "./annotations";
 
-/*const platform_bases = {
-    "YouTube": "www.youtube.com/watch?v=_id_",
-    "Dailymotion": "www.dailymotion.com/video/_id_",
-    "Vimeo": "vimeo.com/_id_",
-    "ThisHorsieRocks": "pt.thishorsie.rocks/w/_id_",
-    "PonyTube": "pony.tube/w/_id_",
-    "Bilibili": "www.bilibili.com/video/_id_",
-    "Twitter": "x.com/_uid_/status/_id_",
-    "Bluesky": "bsky.app/profile/_uid_/post/_id_",
-    "Tiktok": "www.tiktok.com/_uid_/video/_id_",
-    "Odysee": "odysee.com/_uid_/_id_",
-    "Newgrounds": "www.newgrounds.com/portal/view/_id_"
-}
 
-/**
- * Reconstructs a video link from a videos metadata
- * @param data An object containing the platform, id, and uploader id of a video,
- * which are the maximum needed to reconstruct any link from the supported platforms
- * @returns The reconstructed link
- * /
-export function getVideoLink(data: { platform: string, id: string, uploader_id: string }) {
-    return `https://${platform_bases[data.platform as video_platform].replace("_id_", data.id).replace("_uid_", data.uploader_id)}`
-}
-*/
-
-const platform_bases_temp: Record<video_platform, string> = {
-    "YouTube": "www.youtube.com/watch?v=",
+const platform_url_bases: Record<video_platform, string> = {
+    "YouTube": "www.youtube.com/",
     "Bilibili": "www.bilibili.com/",
     "Bluesky": "bsky.app/profile/",
     "Dailymotion": "www.dailymotion.com/",
@@ -45,8 +21,17 @@ const platform_bases_temp: Record<video_platform, string> = {
     "Vimeo": "vimeo.com/"
 }
 
-export function getVideoLinkTemp(data: { platform: video_platform, video_id: string }) {
-    return `https://${platform_bases_temp[data.platform]}${data.video_id}`
+const video_url_bases = { ...platform_url_bases }
+const channel_url_bases = { ...platform_url_bases }
+video_url_bases.YouTube += 'watch?v='
+channel_url_bases.YouTube += 'channel/'
+
+export function getVideoLink(video: { platform: video_platform, video_id: string }) {
+    return `https://${video_url_bases[video.platform]}${video.video_id}`
+}
+
+export function getChannelLink(creator: { platform: video_platform, channel_id: string }) {
+    return `https://${channel_url_bases[creator.platform]}${creator.channel_id}`
 }
 
 /**
@@ -70,7 +55,7 @@ export function toClientVideoMetadata(videoMetadata: Optional<FetchResult, 'manu
     if (clientReceivable.video_metadata)
         clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata as FetchResult, strip_data) as any
 
-    const withLink = { ...clientReceivable, link: getVideoLinkTemp(clientReceivable) }
+    const withLink = { ...clientReceivable, link: getVideoLink(clientReceivable) }
 
     return withLink as any // shhhh
 }

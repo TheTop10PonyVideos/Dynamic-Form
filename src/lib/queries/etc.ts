@@ -1,4 +1,6 @@
 import { prisma } from "../prisma";
+import { BaseCreatorMetadata } from "../types";
+
 
 export async function getAllData() {
     const [
@@ -39,4 +41,12 @@ export async function getPool() {
             votes: v._count.ballot_item
         }
     })
+}
+
+
+export function getRecentCreators(): Promise<Omit<BaseCreatorMetadata, 'last_updated'>[]> {
+    return prisma.$queryRaw`
+        SELECT *
+        FROM get_recent_creators();
+    `
 }

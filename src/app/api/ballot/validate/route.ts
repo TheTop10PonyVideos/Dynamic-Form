@@ -3,7 +3,7 @@ import { removeBallotItem, setBallotItem } from '@/lib/queries/ballot'
 import { video_check } from '@/lib/vote_rules'
 import { after, NextRequest } from 'next/server'
 import { APIValidateRequestBody, APIValidateResponseBody } from '@/lib/api/video'
-import { getVideoLinkTemp, toClientVideoMetadata } from '@/lib/util'
+import { getVideoLink, toClientVideoMetadata } from '@/lib/util'
 import { getNumVotes } from '@/lib/queries/video'
 import { annotations } from '@/lib/annotations'
 
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   let reupload_of
 
   if (source)
-    reupload_of = getVideoLinkTemp(source)
+    reupload_of = getVideoLink(source)
 
   const sendAllData = (req.nextUrl.searchParams.get('all_data') || 'false').toLowerCase() === 'true'
   const returnData = toClientVideoMetadata(metadata, !sendAllData)

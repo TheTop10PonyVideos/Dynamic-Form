@@ -1,9 +1,9 @@
 "use client";
 
-import { VideoPoolItem, VideoStatusSetting } from "@/lib/types";
+import { VideoPoolItem } from "@/lib/types";
 import { ChangeEventHandler, Dispatch, SetStateAction, useEffect, useState } from "react";
 import styles from "../page.module.css"
-import { getVideoLinkTemp } from "@/lib/util";
+import { getVideoLink } from "@/lib/util";
 import { stampMap } from "@/lib/annotations";
 import Image from "next/image";
 import { annotateVideo, setReupload } from "@/lib/api/video";
@@ -25,7 +25,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
   )
 
   const save = async () => {
-    const link = getVideoLinkTemp(videoItem)
+    const link = getVideoLink(videoItem)
 
     if (inputType === 'source')
       await setReupload(link, inputs['source'])
@@ -60,7 +60,7 @@ function Settings({ videoItem, setSelectedVideo }: { videoItem: VideoPoolItem, s
           <img src={videoItem.thumbnail}
             alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"
           />
-          <a href={getVideoLinkTemp(videoItem)} target="_blank" rel="noopener noreferrer">{videoItem.title}</a>
+          <a href={getVideoLink(videoItem)} target="_blank" rel="noopener noreferrer">{videoItem.title}</a>
         </div>
         <p>
         </p>

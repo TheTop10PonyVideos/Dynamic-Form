@@ -185,7 +185,9 @@ export default function VoteForm({ votingPeriod, formOpen, initialEntries, recen
             If you aren&apos;t familiar with the rules or need any reminder, be sure to carefully read the full rules <a href="https://www.thetop10ponyvideos.com/voting-info#h.j2voxvq0owh8" className={styles.link}>here</a>.
           </p>
         </div>
-        <CreatorTicker displayData={recentCreators}/>
+        {recentCreators.length >= 5 &&
+          <CreatorTicker displayData={recentCreators}/>
+        }
         {checkedEntries.map((fieldData, i) =>
           <VoteField
             key={i}

@@ -165,16 +165,32 @@
   font-size: medium;
 }
 
+.profile_icon {
+  border-radius: 15px;
+  width: 28px;
+  height: 28px;
+}
+
+.channel_anchor {
+  color: black;
+  font-size: medium;
+  text-decoration: none;
+}
+
+.channel_anchor:hover {
+  text-decoration: underline;
+}
+
+/* Source: https://getskyscraper.com/blog/css-stock-ticker-animation-scrolling-banner-tutorial-2026 */
 /* Container with overflow hidden to clip the animation */
-.ticker-container {
-  background: rgba(0, 0, 0, 0.3);
+.ticker_container {
   padding: 10px 0;
   overflow: hidden;
 }
 
 /* Gradient fade on edges */
-.ticker-container::before,
-.ticker-container::after {
+.ticker_container::before,
+.ticker_container::after {
   content: '';
   position: absolute;
   top: 0;
@@ -184,25 +200,24 @@
   pointer-events: none;
 }
 
-.ticker-container::before {
+.ticker_container::before {
   left: 0;
-  background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);
+  background: linear-gradient(to right, rgba(0,0,0,0.1), transparent);
 }
 
-.ticker-container::after {
+.ticker_container::after {
   right: 0;
-  background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);
+  background: linear-gradient(to left, rgba(0,0,0,0.1), transparent);
 }
 
 /* The animated track */
-.ticker-track {
+.ticker_track {
   display: flex;
-  animation: ticker-scroll 60s linear infinite;
   width: fit-content;
 }
 
 /* Content containers side by side */
-.ticker-content {
+.ticker_content {
   display: flex;
   gap: 32px;
   padding: 0 16px;
@@ -210,14 +225,15 @@
 }
 
 /* Individual items */
-.ticker-item {
-  color: white;
+.ticker_item {
+  display: flex;
   font-weight: 600;
-  font-size: 15px;
+  align-items: center;
+  gap: 8px;
 }
 
 /* The animation - translate by -50% (half the track) */
-@keyframes ticker-scroll {
+@keyframes ticker_scroll {
   0% {
     transform: translateX(0);
   }

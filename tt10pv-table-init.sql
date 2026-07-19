@@ -161,6 +161,30 @@ AS $$
 		WHERE metadata_id = m_id;
 $$;
 
+
+CREATE OR REPLACE FUNCTION get_recent_creators()
+RETURNS TABLE (
+	channel_id TEXT,
+	platform video_platform,
+	channel_name TEXT,
+	pfp_url TEXT
+)
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT c.channel_id, c.platform, c.channel_name, c.pfp_url
+		FROM creator c JOIN (
+			SELECT creator_id, MAX(upload_date) latest_upload_date
+				FROM video_metadata
+					WHERE recent AND searchable
+				GROUP BY creator_id
+			ORDER by latest_upload_date DESC
+			LIMIT 15
+		) v
+			ON c.id = v.creator_id
+		ORDER BY v.latest_upload_date DESC
+$$;
+
 -- Changes from previous version
 ALTER TABLE video_metadata ADD COLUMN creator_id BIGINT;
 ALTER TABLE video_metadata ADD FOREIGN KEY (creator_id) REFERENCES creator;
@@ -200,4 +224,3 @@ ALTER TABLE video_metadata ALTER COLUMN creator_id SET NOT NULL;
 ALTER TABLE ballot_item ALTER COLUMN voting_period SET NOT NULL;
 
 DROP FUNCTION video_search; -- Then recreate
-
