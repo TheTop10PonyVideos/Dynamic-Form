@@ -1,10 +1,10 @@
 "use client";
 
-import { VideoPoolItem, VideoStatusSettings } from "@/lib/types";
+import { VideoPoolItem, VideoStatusSetting } from "@/lib/types";
 import { ChangeEventHandler, Dispatch, SetStateAction, useEffect, useState } from "react";
 import styles from "../page.module.css"
 import { getVideoLinkTemp } from "@/lib/util";
-import { stampMap } from "@/lib/labels";
+import { stampMap } from "@/lib/annotations";
 import Image from "next/image";
 import { annotateVideo, setReupload } from "@/lib/api/video";
 
@@ -129,8 +129,8 @@ function VideoTile({ i, item, onClick }: { i: number, item: VideoPoolItem, onCli
       </span>
       {item.title}<br/><br/>
 
-      <b>Uploader:</b><br/>
-      {item.uploader}<br/><br/>
+      {/*<b>Uploader:</b><br/>
+      {item.uploader}<br/><br/>*/}
 
       <b>Upload Date:</b><br/>
       {item.upload_date}<br/><br/>

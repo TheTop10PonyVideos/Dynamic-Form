@@ -165,6 +165,67 @@
   font-size: medium;
 }
 
+/* Container with overflow hidden to clip the animation */
+.ticker-container {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px 0;
+  overflow: hidden;
+}
+
+/* Gradient fade on edges */
+.ticker-container::before,
+.ticker-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ticker-container::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(0,0,0,0.3), transparent);
+}
+
+.ticker-container::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0,0,0,0.3), transparent);
+}
+
+/* The animated track */
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 60s linear infinite;
+  width: fit-content;
+}
+
+/* Content containers side by side */
+.ticker-content {
+  display: flex;
+  gap: 32px;
+  padding: 0 16px;
+  white-space: nowrap;
+}
+
+/* Individual items */
+.ticker-item {
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* The animation - translate by -50% (half the track) */
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .eligibilityIcon {
   position: absolute;
   bottom: 10px;

@@ -31,7 +31,7 @@ export default function PlaylistItem({ data, onRemove, index }: Props) {
         <img src={data.thumbnail || ""} className={styles.entryThumbnail} width={160} height={90} alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
         <div className={styles.videoDetails}>
           <h3 className={styles.videoTitle}>{data.title}</h3>
-          <p className={styles.creatorField}>{data.uploader}</p>
+          <p className={styles.creatorField}>{data.creator.channel_name}</p>
         </div>
       </a>
       <div ref={optionsElement}>

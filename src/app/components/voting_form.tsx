@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { redirect, RedirectType } from "next/navigation";
 import styles from "../page.module.css";
-import { BallotEntryField, VideoDataClient } from "@/lib/types";
+import { BallotEntryField, CreatorDisplayData, VideoDataClient } from "@/lib/types";
 import VoteCounter from "./vote_counter";
 import VoteField from "./vote_field";
 import { testLink } from "@/lib/util";
@@ -11,24 +11,26 @@ import { removeBallotItem } from "@/lib/api/ballot";
 import { validate, videoSearch } from "@/lib/api/video";
 import { ballot_check, isEligible } from "@/lib/vote_rules";
 import Image from "next/image";
-import { labels } from "@/lib/labels";
+import { annotations } from "@/lib/annotations";
+import CreatorTicker from "./creator_ticker";
 
 interface Props {
-  initial_entries: BallotEntryField[],
-  votingPeriod: [number, boolean]
+  votingPeriod: Date,
+  formOpen: boolean,
+  initialEntries: BallotEntryField[]
+  recentCreators: CreatorDisplayData[]
 }
 
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-export default function VoteForm({ initial_entries, votingPeriod }: Props) {
-  const [voteFields, setVoteFields] = useState<BallotEntryField[]>(initial_entries)
+export default function VoteForm({ votingPeriod, formOpen, initialEntries, recentCreators }: Props) {
+  const [voteFields, setVoteFields] = useState<BallotEntryField[]>(initialEntries)
   const [warning, setWarning] = useState(false)
   const [searchResults, setSearchResults] = useState<[number, VideoDataClient[]]>([-1, []])
   const [focusIndex, setFocusIndex] = useState(-1)
   const inputTimeouts = useRef<NodeJS.Timeout[]>([])
   const deletionTimeouts = useRef<NodeJS.Timeout[]>([])
   const pasting = useRef(false)
-  const [votingMonth, formOpen] = votingPeriod
 
   /**
    * Shorthand for updating vote fields given their index
@@ -97,7 +99,7 @@ export default function VoteForm({ initial_entries, votingPeriod }: Props) {
       removeFieldSave(field_index)
     }
     else if (!isLink) {
-      updateField(field_index, { input: e.currentTarget.value, videoData: null, flags: [labels.invalid_link] })
+      updateField(field_index, { input: e.currentTarget.value, videoData: null, flags: [annotations.invalid_link] })
       removeFieldSave(field_index)
       if (input.length >= 2)
         inputTimeouts.current[field_index] = setTimeout(() => search(field_index, input), 500)
@@ -171,7 +173,7 @@ export default function VoteForm({ initial_entries, votingPeriod }: Props) {
       <form className={styles.form} onSubmit={submit} autoComplete="off">
         { warning && submitSub5Overlay(eligibleCount, () => setWarning(false)) }
         <div className={styles.headerfield}>
-          <label>Voting for The Top 10 Pony Videos of {months[votingMonth]}</label>
+          <label>Voting for The Top 10 Pony Videos of {months[votingPeriod.getUTCMonth()]}</label>
           <p>
             This form is made to make voting easier by displaying video details with each vote and by checking their preliminary eligibility in advance.<br/><br/>
             To submit your votes, click the <b>Export Votes</b> button at the bottom. This will forward all your votes to the <a className={styles.link} href="https://docs.google.com/forms/d/e/1FAIpQLSdVi1gUmI8c2nBnYde7ysN8ZJ79EwI5WSBTbHKqIgC7js0PYg/viewform">main Google Form</a> where you can then submit them.<br/><br/>
@@ -183,6 +185,7 @@ export default function VoteForm({ initial_entries, votingPeriod }: Props) {
             If you aren&apos;t familiar with the rules or need any reminder, be sure to carefully read the full rules <a href="https://www.thetop10ponyvideos.com/voting-info#h.j2voxvq0owh8" className={styles.link}>here</a>.
           </p>
         </div>
+        <CreatorTicker displayData={recentCreators}/>
         {checkedEntries.map((fieldData, i) =>
           <VoteField
             key={i}
@@ -206,7 +209,7 @@ export default function VoteForm({ initial_entries, votingPeriod }: Props) {
         <button type="submit" value={eligibleCount < 5 ? "warn" : "export" } className={`${styles.exportButton} ${formOpen ? (eligibleCount ? styles.submitButton : styles.disabledSubmitButton2) : styles.disabledSubmitButton}`}>
           Export Votes
           <div className={styles.disabledExportNote}>
-            Come back during the first week of {months[(votingMonth + 1) % 12]} when the voting form opens!
+            Come back during the first week of {months[(votingPeriod.getUTCMonth() + 1) % 12]} when the voting form opens!
           </div>
         </button>
       </form>

@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import VoteForm from "./components/voting_form";
 import { getBallotItems } from "@/lib/queries/ballot";
 import styles from "./page.module.css"
-import { getVotingPeriod, toClientVideoMetadata } from "@/lib/util";
+import { getVotingPeriod, isFormOpen, toClientVideoMetadata } from "@/lib/util";
 import { video_check } from "@/lib/vote_rules";
 
 // Initialize entries to be shown if the user had previously made any in their ballot
@@ -16,7 +16,6 @@ export default async function Home() {
     ballot_index: i.index
   }))
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const initial_entries: any[] = Array.from({ length: 10 }, () => ({ flags: [], videoData: null, input: "" }))
   dataItems.forEach(item => initial_entries[item.ballot_index].videoData = item)
 
@@ -31,7 +30,12 @@ export default async function Home() {
 
   return (
     <div className={styles.page}>
-      <VoteForm initial_entries={initial_entries} votingPeriod={getVotingPeriod()}/>
+      <VoteForm
+        votingPeriod={getVotingPeriod()}
+        formOpen={isFormOpen()}
+        initialEntries={initial_entries}
+        recentCreators={[]}
+      />
     </div>
   )
 }

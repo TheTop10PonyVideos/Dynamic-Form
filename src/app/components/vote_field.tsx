@@ -1,7 +1,7 @@
 import { BallotEntryField, VideoDataClient } from "@/lib/types";
 import styles from "../page.module.css";
 import Image from "next/image";
-import { stampMap } from "@/lib/labels";
+import { stampMap } from "@/lib/annotations";
 
 interface Props {
   index: number
@@ -35,7 +35,7 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
         <div className={styles.video_display}>
           <img src={fieldData.videoData.thumbnail || ""} width={160} height={90} alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
           {fieldData.videoData.title || ""}
-          <div className={styles.video_origin}>By <b>{fieldData.videoData.uploader}</b> on <b>{fieldData.videoData.platform}</b></div>
+          <div className={styles.video_origin}>By <b>{fieldData.videoData.creator.channel_name}</b> on <b>{fieldData.videoData.platform}</b></div>
         </div>
       }
 
@@ -70,9 +70,9 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
       </div>
 
       <div className={styles.eligibilityIcon}>{
+        // Field data undefined -> waiting for response
+        fieldData === undefined ? <div className={styles.loading_icon}/> :
         showEligibility && (
-          // Annotation undefined -> waiting for response
-          fieldData == undefined ? <div className={styles.loading_icon}/> :
           refFlag ? (
             // Annotation -> use eligibility listed on it
             <>
@@ -114,7 +114,7 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
               >
                 <img src={resData.thumbnail || ""} width={112} height={63} alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
                 {resData.title || ""}
-                <div className={styles.video_origin}>By <b>{resData.uploader}</b> on <b>{resData.platform}</b></div>
+                <div className={styles.video_origin}>By <b>{resData.creator.channel_name}</b> on <b>{resData.platform}</b></div>
               </div>
             ) ||
             <div style={{textAlign: "center", padding: "10px", fontWeight: 600, fontSize: "0.9rem"}}>

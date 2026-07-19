@@ -3,7 +3,7 @@
 import { Suspense, useState } from "react";
 import styles from "../page.module.css"
 import dynamic from "next/dynamic";
-import { labels } from "@/lib/labels";
+import { annotations } from "@/lib/annotations";
 
 const DataTab = dynamic(() => import("./DataTab"))
 const LabelsTab = dynamic(() => import("./LabelsTab"))
@@ -31,7 +31,7 @@ export default function Console() {
       <Suspense fallback={<div>Loading...</div>}>
       {
         activeTab === "Data" && <DataTab /> ||
-        activeTab === "Labels" && <LabelsTab labelSettings={labels}/> ||
+        activeTab === "Labels" && <LabelsTab labelSettings={annotations}/> ||
         activeTab === "Pool" && <VideoPoolTab />
       }
       </Suspense>

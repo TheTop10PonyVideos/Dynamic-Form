@@ -6,12 +6,12 @@ import Image from "next/image";
 import VoteField from "@/app/components/vote_field";
 import { testLink } from "@/lib/util";
 import { validate, updateLabels } from "@/lib/api/video";
-import { BallotEntryField, Flag } from "@/lib/types";
-import { label_key, labels, stampMap } from "@/lib/labels";
+import { BallotEntryField, Annotation } from "@/lib/types";
+import { label_key, annotations, stampMap } from "@/lib/annotations";
 import { ballot_check, isEligible } from "@/lib/vote_rules";
 
 interface Props {
-  labelSettings: Record<label_key, Flag>
+  labelSettings: Record<label_key, Annotation>
 }
 
 export default function LabelsTab({ labelSettings }: Props) {
@@ -22,7 +22,7 @@ export default function LabelsTab({ labelSettings }: Props) {
   const savedLabels = useRef(JSON.stringify(labelsConfigs))
   const pasting = useRef(false)
 
-  const labelChange = (key: label_key, newVals: Partial<Flag>) => {
+  const labelChange = (key: label_key, newVals: Partial<Annotation>) => {
     const updated = {...labelsConfigs}
     updated[key] = { ...updated[key], ...newVals }
 
@@ -55,7 +55,7 @@ export default function LabelsTab({ labelSettings }: Props) {
     if (!input)
       updateField(field_index, { input, videoData: null, flags: [] })
     else if (!isLink)
-      updateField(field_index, { input, videoData: null, flags: [labels.invalid_link] })
+      updateField(field_index, { input, videoData: null, flags: [annotations.invalid_link] })
     else if (isLink.length)
       updateField(field_index, { input, videoData: null, flags: isLink })
     else if (pasting.current) {
@@ -82,7 +82,7 @@ export default function LabelsTab({ labelSettings }: Props) {
       alert("Failed to save")
   }
 
-  const newLabelMap = new Map<string, Flag>(Object.values(labelsConfigs).map(label => [label.trigger, label]))
+  const newLabelMap = new Map<string, Annotation>(Object.values(labelsConfigs).map(label => [label.trigger, label]))
   const activeLabels = new Set<string>()
 
   // Using client bundled labels here is fine since it's used only to determine active labels
@@ -90,7 +90,7 @@ export default function LabelsTab({ labelSettings }: Props) {
   const eligibleCount = checkedEntries.filter(isEligible).length
 
   if (eligibleCount < 5)
-    activeLabels.add(labels.sub_5_votes.trigger)
+    activeLabels.add(annotations.sub_5_votes.trigger)
 
   // Apply label configuration fields for previewing
   const withPreviews = checkedEntries.map(e => (
