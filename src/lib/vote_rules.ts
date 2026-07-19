@@ -1,5 +1,5 @@
-import { BallotEntryField, Flag, VideoDataClient } from "./types";
-import { labels } from "./labels";
+import { BallotEntryField, Annotation, VideoDataClient, BaseFetchResult, FetchResult } from "./types";
+import { annotations } from "./annotations";
 import { manual_label, video_metadata } from "@/generated/prisma";
 import { getEligibleRange } from "./util";
 
@@ -7,33 +7,33 @@ import { getEligibleRange } from "./util";
  * Server side checks of video metadata to determine eligibility. If a manual label flagis present, it will be the only one present unless include_all is true
  * @returns A list of flags for any that may apply to the video
  */
-export function video_check(video_metadata: video_metadata & { video_metadata?: video_metadata, manual_label: manual_label | null }): Flag[] {
+export function video_check(video_metadata: FetchResult): Annotation[] {
     if (video_metadata.video_metadata)
         return video_check(video_metadata.video_metadata as any)
 
-    const flags: Flag[] = []
+    const flags: Annotation[] = []
 
     const upload_date = video_metadata.upload_date
     const [earliest, latest] = getEligibleRange()
 
     if (upload_date > latest)
-        flags.push(labels.too_new)
+        flags.push(annotations.too_new)
     else if (upload_date.toDateString() === latest.toDateString())
-        flags.push(labels.new_edge)
+        flags.push(annotations.new_edge)
     else if (upload_date.toDateString() === earliest.toDateString())
-        flags.push(labels.old_edge)
+        flags.push(annotations.old_edge)
     else if (upload_date < earliest)
-        flags.push(labels.too_old)
+        flags.push(annotations.too_old)
 
     if (video_metadata.duration !== null) {
         if (video_metadata.duration < 30)
-            flags.push(labels.too_short)
+            flags.push(annotations.too_short)
         else if (video_metadata.duration <= 45)
-            flags.push(labels.maybe_too_short)
+            flags.push(annotations.maybe_too_short)
     }
 
-    if (video_metadata.uploader === "LittleshyFiM")
-        flags.push(labels.littleshy_vid)
+    if (video_metadata.creator.channel_name === "LittleshyFiM")
+        flags.push(annotations.littleshy_vid)
 
     return video_metadata.manual_label ?
         [
@@ -49,10 +49,10 @@ export function video_check(video_metadata: video_metadata & { video_metadata?: 
 }
 
 const priorityLabels = [
-    labels.duplicate_votes,
-    labels.no_simping,
-    labels.too_new, labels.new_edge,
-    labels.too_old, labels.old_edge
+    annotations.duplicate_votes,
+    annotations.no_simping,
+    annotations.too_new, annotations.new_edge,
+    annotations.too_old, annotations.old_edge
 ].map(l => l.trigger)
 
 /**
@@ -72,10 +72,10 @@ export function ballot_check(entries: BallotEntryField[]) {
 
         const entryData = (entry.videoData.video_metadata ? entry.videoData.video_metadata : entry.videoData)
 
-        const creator_id = `${entryData.uploader}-${entryData.platform}`
+        const creator_id = `${entryData.creator.channel_id}-${entryData.platform}`
 
         if (uniqueVids.has(entryData.link))
-            entry.flags.push(labels.duplicate_votes)
+            entry.flags.push(annotations.duplicate_votes)
         else
             uniqueVids.add(entryData.link)
 
@@ -93,11 +93,11 @@ export function ballot_check(entries: BallotEntryField[]) {
 
         const entryData = (entry.videoData.video_metadata ? entry.videoData.video_metadata : entry.videoData)
 
-        const creator_id = `${entryData.uploader}-${entryData.platform}`
+        const creator_id = `${entryData.creator.channel_id}-${entryData.platform}`
         const instances = creatorCounts.get(creator_id)!
 
         if (instances > 2)
-            entry.flags.push(labels.no_simping)
+            entry.flags.push(annotations.no_simping)
 
         const manualAnnotation = entry.flags.find(f => f.trigger === 'Manual Review')
         if (!manualAnnotation)

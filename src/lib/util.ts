@@ -1,8 +1,8 @@
 // A random assortent of helper functions that are needed in multiple areas of the project
 
-import { video_metadata } from "@/generated/prisma";
-import { Flag, VideoDataClient, VideoPlatform } from "./types";
-import { labels } from "./labels";
+import { creator, manual_label, video_metadata, video_platform } from "@/generated/prisma";
+import { Annotation, BaseFetchResult, FetchResult, Optional, VideoDataClient } from "./types";
+import { annotations } from "./annotations";
 
 /*const platform_bases = {
     "YouTube": "www.youtube.com/watch?v=_id_",
@@ -25,15 +25,16 @@ import { labels } from "./labels";
  * @returns The reconstructed link
  * /
 export function getVideoLink(data: { platform: string, id: string, uploader_id: string }) {
-    return `https://${platform_bases[data.platform as VideoPlatform].replace("_id_", data.id).replace("_uid_", data.uploader_id)}`
+    return `https://${platform_bases[data.platform as video_platform].replace("_id_", data.id).replace("_uid_", data.uploader_id)}`
 }
 */
 
-const platform_bases_temp = {
+const platform_bases_temp: Record<video_platform, string> = {
     "YouTube": "www.youtube.com/watch?v=",
     "Bilibili": "www.bilibili.com/",
     "Bluesky": "bsky.app/profile/",
     "Dailymotion": "www.dailymotion.com/",
+    "Derpibooru": "derpibooru.org/",
     "Instagram": "www.instagram.com/",
     "Newgrounds": "www.newgrounds.com/",
     "Odysee": "odysee.com/",
@@ -44,104 +45,92 @@ const platform_bases_temp = {
     "Vimeo": "vimeo.com/"
 }
 
-export function getVideoLinkTemp(data: { platform: string, video_id: string, uploader_id: string }) {
-    return `https://${platform_bases_temp[data.platform as VideoPlatform]}${data.video_id}`
+export function getVideoLinkTemp(data: { platform: video_platform, video_id: string }) {
+    return `https://${platform_bases_temp[data.platform]}${data.video_id}`
 }
 
 /**
  * Truncates and transforms video metadata to only what the client needs
 */
-export function toClientVideoMetadata(video_metadata: video_metadata, strip_data = true): VideoDataClient | (Omit<video_metadata, 'id' | 'source'> & { link: string, video_metadata?: video_metadata & { link: string } }) {
-    let clientReceivable: any
+export function toClientVideoMetadata(videoMetadata: Optional<FetchResult, 'manual_label' | 'video_metadata'>, strip_data = true): VideoDataClient {
+    const clientReceivable = { ...videoMetadata }
 
-    if (strip_data)
-        clientReceivable = (({ searchable, duration, upload_date, recent, video_id, id, source, ...stripped }) => stripped)(video_metadata)
-    else
-        clientReceivable = (({ id, source, ...stripped }) => stripped)(video_metadata)
-
-    if (clientReceivable.manual_label) {
-        const { metadata_id, ...manual_annotation } = clientReceivable.manual_label
-        clientReceivable.manual_label = manual_annotation
+    for (const unserializable of ['id', 'source', 'creator_id', 'alias_of']) {
+        delete (clientReceivable.creator as any)[unserializable]
+        delete (clientReceivable as any)[unserializable]
     }
 
+    if (strip_data)
+        for (const to_strip of ['searchable', 'duration', 'upload_date', 'recent'])
+            delete (clientReceivable as any)[to_strip]
+
+    if (clientReceivable.manual_label)
+        delete (clientReceivable.manual_label as any)['metadata_id']
+
     if (clientReceivable.video_metadata)
-        clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata, strip_data)
+        clientReceivable.video_metadata = toClientVideoMetadata(clientReceivable.video_metadata as FetchResult, strip_data) as any
 
-    const withLink = { ...clientReceivable, link: getVideoLinkTemp(video_metadata) }
+    const withLink = { ...clientReceivable, link: getVideoLinkTemp(clientReceivable) }
 
-    return withLink as VideoDataClient
+    return withLink as any // shhhh
 }
 
-const validLink = /(https?:\/\/)?(\w+\.)?(pony\.tube|youtube\.com|youtu\.be|bilibili\.com|vimeo\.com|thishorsie\.rocks|dailymotion\.com|dai\.ly|tiktok\.com|twitter\.com|x\.com|odysee\.com|newgrounds\.com|bsky\.app|instagram\.com)\/?[^\s]{0,500}/
+const validLink = /(https?:\/\/)?(\w+\.)?(pony\.tube|youtube\.com|youtu\.be|bilibili\.com|vimeo\.com|thishorsie\.rocks|dailymotion\.com|dai\.ly|derpibooru\.org|tiktok\.com|twitter\.com|x\.com|odysee\.com|newgrounds\.com|bsky\.app|instagram\.com)\/?[^\s]{0,500}/
 const link = /(https?:\/\/)?[a-zA-Z0-9-]+\.[a-zA-Z0-9-]+/
 
 /**
  * Tests an input string to determine if it is a valid link
  * @returns false if input doesn't resemble a link, or an array of 0 or 1 flag if the link is or isn't from a supported platform respectively
  */
-export function testLink(input: string): false | Flag[] {
+export function testLink(input: string): false | Annotation[] {
     input = input.trim()
     if (!input) return false
 
     if (validLink.test(input)) return []
-    if (link.test(input)) return [labels.unsupported_site]
+    if (link.test(input)) return [annotations.unsupported_site]
     return false
 }
 
-/**
- * Get the index of the current voting cycle month
- * and whether or not the mane voting form is open
+/*
+ * Check whether or not the mane voting form is currently open
  */
-export function getVotingPeriod(): [number, boolean] {
-    const now = new Date(Date.now())
-    const day = now.getDate()
-
-    const period = new Date(
-        now.getFullYear(),
-        day > 7 ? now.getMonth() : now.getMonth() - 1,
-        Math.min(day, 10) // Mar 30 to february would otherwise still result in march bc of day rollover
-    )
-
-    // The form is open if it's the first week or usually last day of the month
-    now.setDate(day + 1) // Using rollover to determine if it's last day
-    const formOpen = day <= 7 || day > now.getDate()
-
-    return [period.getMonth(), formOpen]
+export function isFormOpen() {
+    const date = new Date(Date.now())
+    date.setUTCDate(date.getUTCDate() + 1) // Using rollover to determine if this is the last day of the month
+    
+    // The form is open if it's the first week or usually the last day of the month
+    return date.getUTCDate() <= 8
 }
 
 /**
- * Get the earliest and latest dates from which videos
- * may be eligible to vote for, which include the last
- * day of the month prior to the voting period, and the
- * first day from the next month, since some exceptions
+ * Get the year and month of the current voting period as a Date
+ */
+export function getVotingPeriod() {
+    const now = new Date()
+    const day = now.getUTCDate()
+
+    return new Date(Date.UTC(
+        now.getUTCFullYear(),
+        day > 7 ? now.getUTCMonth() : now.getUTCMonth() - 1,
+        1
+    ))
+}
+
+/**
+ * Get the earliest and latest datetimes from which videos
+ * may be eligible to vote for, which account for the first
+ * day of the month at the earliest timezone, and the last
+ * day of the month from the latest, since some exceptions
  * are made because of timezone differences
  */
 export function getEligibleRange(): [Date, Date] {
-    const now = new Date(Date.now())
-    const periodMonth = getVotingPeriod()[0]
+    const period = getVotingPeriod()
 
-    return [
-        new Date(
-            now.getFullYear(),
-            now.getMonth() != periodMonth ? now.getMonth() - 1 : now.getMonth(),
-            0
-        ),
-        new Date(
-            now.getFullYear(),
-            now.getMonth() != periodMonth ? now.getMonth() : now.getMonth() + 1,
-            1
-        )
-    ]
-}
+    const [earliest, latest] = [new Date(period), new Date(period)]
 
-/**
- * Date objects use local timezones which may show different dates from those stored in the database.
- * This function is just to correct the misrepresentation of upload_date for wherever it's used
- */
-export function adjustDate(v: video_metadata) {
-    v.upload_date = new Date(
-        v.upload_date.getUTCFullYear(),
-        v.upload_date.getUTCMonth(),
-        v.upload_date.getUTCDate()
-    )
+    earliest.setUTCHours(-14)
+    latest.setUTCMonth(period.getUTCMonth() + 1)
+    latest.setUTCHours(12)
+
+    return [earliest, latest]
 }

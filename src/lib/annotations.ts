@@ -1,5 +1,5 @@
 // A file containing the mappings for each of the labels to apply to videos upon validation when 
-import { Flag } from "./types"
+import { Annotation } from "./types"
 
 export type eligibilityType = "eligible" | "maybe ineligible" | "ineligible"
 
@@ -27,9 +27,9 @@ export type label_key =
 	"littleshy_vid"
 
 /**
- * Use this when only fields other than those updatable by the operator are used, since these will only ever have the default values
+ * Main annotations to reference when determining issues with video eligibility
  */
-export let labels: Record<label_key, Flag> = {
+export let annotations: Record<label_key, Annotation> = {
     invalid_link:     { name: 'Invalid link',       type: 'ineligible', 	  trigger: 'Non url entry',               details: 'Not a valid link' },
 	duplicate_votes:  { name: 'Duplicate vote',     type: 'ineligible', 	  trigger: 'Duplicate links in ballot',   details: 'Duplicate votes are not eligible' },
 	missing_id:       { name: 'Missing id',         type: 'ineligible', 	  trigger: 'No video id in link',         details: 'No video id present' },

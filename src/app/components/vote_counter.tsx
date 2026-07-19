@@ -1,6 +1,6 @@
 import Image from "next/image";
 import styles from "../page.module.css";
-import { labels } from "@/lib/labels";
+import { annotations } from "@/lib/annotations";
 
 interface Props {
   eligibleCount: number
@@ -10,8 +10,8 @@ export default function VoteCounter({ eligibleCount }: Props) {
   const has5 = eligibleCount >= 5
 
   const [note, coloring] = (
-    !eligibleCount ? [labels.zero_votes.details, styles.ineligible] :
-    !has5 ? [labels.sub_5_votes.details, styles.warn] :
+    !eligibleCount ? [annotations.zero_votes.details, styles.ineligible] :
+    !has5 ? [annotations.sub_5_votes.details, styles.warn] :
     ['All votes will have full weight!', styles.good]
   )
 
