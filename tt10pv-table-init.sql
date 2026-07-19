@@ -21,7 +21,7 @@ ALTER DATABASE smols_form
 
 
 -- Types
-CREATE TYPE video_platform2 AS ENUM(
+CREATE TYPE video_platform AS ENUM(
 	'YouTube',
     'Bilibili',
     'Bluesky',
@@ -190,6 +190,7 @@ ALTER TABLE video_metadata ADD COLUMN creator_id BIGINT;
 ALTER TABLE video_metadata ADD FOREIGN KEY (creator_id) REFERENCES creator;
 
 ALTER TABLE video_metadata ADD COLUMN tmp video_platform;
+UPDATE video_metadata SET platform = 'PonyTube' WHERE platform = 'Pony';
 UPDATE video_metadata SET tmp = platform::video_platform;
 ALTER TABLE video_metadata DROP COLUMN platform;
 ALTER TABLE video_metadata RENAME COLUMN tmp TO platform;

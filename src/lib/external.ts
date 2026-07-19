@@ -176,7 +176,7 @@ async function from_youtube(url: URL, with_annotation: boolean) {
 
     const cached = await getVideoMetadata(video_id, 'YouTube', with_annotation)
 
-    if (cached?.video_metadata)
+    if (cached)
         return cached
 
     const id_param = new URLSearchParams({ id: video_id })
