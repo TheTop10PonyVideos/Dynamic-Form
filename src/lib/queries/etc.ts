@@ -1,7 +1,4 @@
 import { prisma } from "../prisma";
-import { Flag } from "../types";
-import { adjustDate } from "../util";
-
 
 export async function getAllData() {
     const [
@@ -24,13 +21,19 @@ export async function getPool() {
         await prisma.video_metadata.findMany({
             include: {
                 manual_label: true,
-                _count: { select: { ballot_item: true } }
+                _count: { select: { ballot_item: true } },
+                creator: true,
+                video_metadata: {
+                    include: {
+                        manual_label: true,
+                        creator: true
+                    }
+                }
             },
             orderBy: { ballot_item: { _count: "desc" } },
             take: 45
         })
     ).map(v => {
-        adjustDate(v)
         return {
             ...v,
             votes: v._count.ballot_item

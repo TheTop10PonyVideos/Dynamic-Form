@@ -1,6 +1,5 @@
-import { ballot_item } from "@/generated/prisma";
 import { prisma } from "../prisma";
-import { adjustDate, getEligibleRange } from "../util";
+import { getEligibleRange, getVotingPeriod } from "../util";
 
 
 export async function getBallotItems(uid: string) {
@@ -11,7 +10,7 @@ export async function getBallotItems(uid: string) {
 
     const ballot_items = await prisma.ballot_item.findMany({
         where: {
-            user_id: uid, creation_date: { gte: cycle_cutoff_date }
+            user_id: uid, voting_period: { equals: cycle_cutoff_date }
         },
         include: {
             video_metadata: {
@@ -25,7 +24,6 @@ export async function getBallotItems(uid: string) {
         }
     })
 
-    ballot_items.forEach(b => adjustDate(b.video_metadata))
     return ballot_items
 }
 
@@ -38,7 +36,12 @@ export async function removeBallotItem(uid: string, index: number) {
 
 
 export async function setBallotItem(uid: string, index: number, metadata_id: bigint) {
-    const item = { metadata_id, index, creation_date: new Date(Date.now()) }
+    const item = {
+        metadata_id,
+        index,
+        creation_date: new Date(Date.now()),
+        voting_period: getVotingPeriod()
+    }
 
     await prisma.user.upsert({
         where: { id: uid },
@@ -47,7 +50,7 @@ export async function setBallotItem(uid: string, index: number, metadata_id: big
                 upsert: {
                     where: { user_id_index: { user_id: uid, index: index } },
                     update: item,
-                    create: item
+                    create: { ...item }
                 }
             }
         },

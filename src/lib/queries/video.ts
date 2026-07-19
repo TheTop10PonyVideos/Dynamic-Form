@@ -1,36 +1,25 @@
-import { Prisma, video_metadata } from "@/generated/prisma";
+import { creator, Prisma, video_metadata, video_platform } from "@/generated/prisma";
 import { prisma } from "../prisma";
-import { VideoPlatform } from "../types";
-import { adjustDate } from "../util";
+import { BaseFetchResult } from "../types";
 
 
-export async function getVideoMetadata(id: string, platform: VideoPlatform, with_annotation: boolean) {
-    const metadata = await prisma.video_metadata.findUnique({
+export async function getVideoMetadata(video_id: string, platform: video_platform, with_annotation: boolean) {
+    return prisma.video_metadata.findUnique({
         where: {
-            video_id_platform: {
-                video_id: id,
-                platform: platform
-            }
+            video_id_platform: { video_id, platform }
         },
         include: { 
             manual_label: with_annotation,
             // If the video is a reupload, return the original video's metadata
             video_metadata: {
                 include: {
-                    manual_label: with_annotation
+                    manual_label: with_annotation,
+                    creator: true
                 }
-            }
+            },
+            creator: true
         }
     })
-
-    if (metadata == null)
-        return metadata
-
-    adjustDate(metadata)
-    if (metadata.video_metadata)
-        adjustDate(metadata.video_metadata)
-
-    return metadata
 }
 
 
@@ -40,8 +29,39 @@ export async function getNumVotes(id: bigint) {
 }
 
 
-export async function saveVideoMetadata(video_data: Omit<video_metadata, 'id'>) {
-    return await prisma.video_metadata.create({ data: video_data })
+export function saveMetadata(metadata: BaseFetchResult) {
+    const { creator, ...videoMetadata } = metadata
+
+    return prisma.video_metadata.upsert({
+        where: {
+            video_id_platform: { video_id: videoMetadata.video_id, platform: videoMetadata.platform }
+        },
+        create: {
+            ...videoMetadata,
+            creator: {
+                connectOrCreate: {
+                    where: { channel_id_platform: {
+                        channel_id: creator.channel_id,
+                        platform: creator.platform
+                    }},
+                    create: creator
+                }
+            }
+        },
+        update: {
+            ...videoMetadata,
+            creator: {
+                connectOrCreate: {
+                    where: { channel_id_platform: {
+                        channel_id: creator.channel_id,
+                        platform: creator.platform
+                    }},
+                    create: creator
+                }
+            }
+        },
+        include: { creator: true }
+    })
 }
 
 
@@ -98,8 +118,8 @@ export async function updateSearchable(metadata_id: bigint, searchable: boolean)
 }
 
 
-export async function titleSearchMetadata(query: string): Promise<video_metadata[]> {
-    return await prisma.$queryRaw`
+export function titleSearchMetadata(query: string): Promise<{ video_metadata: video_metadata, creator: creator }[]> {
+    return prisma.$queryRaw`
         SELECT *
         FROM video_search(${query});
     `

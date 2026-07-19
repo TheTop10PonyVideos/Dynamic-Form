@@ -1,51 +1,38 @@
-// Verbatim
+import { creator, manual_label, video_metadata, video_platform } from "@/generated/prisma"
+import { eligibilityType } from "./annotations"
 
-import { video_metadata } from "@/generated/prisma"
-import { eligibilityType } from "./labels"
 
-export type VideoPlatform =
-    "YouTube" |
-    "Bilibili" |
-    "Bluesky" |
-    "Dailymotion" |
-    "Instagram" |
-    "Newgrounds" |
-    "Odysee" |
-    "PonyTube" |
-    "Tiktok" |
-    "ThisHorsieRocks" |
-    "Twitter" |
-    "Vimeo"
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
-export const VideoPlatforms = [
-    "YouTube",
-    "Bilibili",
-    "Bluesky",
-    "Dailymotion",
-    "Instagram",
-    "Newgrounds",
-    "Odysee",
-    "PonyTube",
-    "Tiktok",
-    "ThisHorsieRocks",
-    "Twitter",
-    "Vimeo"
-]
+export type VideoDataClient = Omit<
+    FetchResult, 'id' | 'source' | 'upload_date' | 'duration' | 'searchable' | 'recent' | 'video_id' | 'creator'
+> & {
+    link: string,
+    creator: BaseCreatorMetadata
+    video_metadata?: Omit<FetchResult, 'id' | 'source' | 'upload_date' | 'duration' | 'searchable' | 'recent' | 'video_id'> & { link: string }
+}
 
-export type VideoDataClient = Omit<video_metadata, "upload_date" | "duration" | "searchable" | "recent" | "video_id" | "id" | "source"> & { link: string, video_metadata?: VideoDataClient }
-
-export type VideoStatusSettings = "eligible" | "default" | "ineligible"
+export type VideoStatusSetting = "eligible" | "default" | "ineligible"
 
 /**
- * Used to signify a videos eligibility status
- * 
- * The context these flags are used in determine what their values can be assumed to be
+ * Used for describing reasons for a videos eligibility
  */
-export type Flag = {
+export type Annotation = {
     name: string
     type: eligibilityType
     details: string
     trigger: string
+}
+
+export type BaseVideoMetadata = Omit<video_metadata, 'id' | 'creator_id' | 'source'>
+
+export type BaseCreatorMetadata = Omit<creator, 'id' | 'alias_of'>
+
+export type BaseFetchResult = BaseVideoMetadata & { creator: BaseCreatorMetadata }
+export type FetchResult = video_metadata & {
+    creator: creator,
+    manual_label: manual_label | null,
+    video_metadata: Omit<FetchResult, 'video_metadata'> | null
 }
 
 /**
@@ -60,9 +47,16 @@ export type Flag = {
  * input is the user input string, ideally of a video url
  */
 export type BallotEntryField = {
-    flags: Flag[]
+    flags: Annotation[]
     videoData: VideoDataClient | undefined | null
     input: string
+}
+
+export type CreatorDisplayData = {
+    channelURL: string
+    profileImgURL: string
+    channelName: string
+    latestActiveDate: Date
 }
 
 export type YTDLPItems = {
@@ -78,8 +72,8 @@ export type YTDLPItems = {
 
 export type VideoPoolItem = Omit<video_metadata, "upload_date" | "platform"> & {
     votes: number,
-    flags: Flag[],
+    flags: Annotation[],
     upload_date: string,
-    platform: VideoPlatform,
+    platform: video_platform,
     source_link: string
 }

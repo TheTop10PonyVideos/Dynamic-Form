@@ -37,18 +37,18 @@ model video_metadata {
   video_id             String
   thumbnail            String
   title                String
-  uploader             String
-  uploader_id          String
   upload_date          DateTime         @db.Date
   duration             Int?
-  platform             String
   recent               Boolean
   searchable           Boolean?
   id                   BigInt           @id @default(autoincrement())
   source               BigInt?
+  creator_id           BigInt
+  platform             video_platform
   ballot_item          ballot_item[]
   manual_label         manual_label?
   playlist_item        playlist_item[]
+  creator              creator          @relation(fields: [creator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   video_metadata       video_metadata?  @relation("video_metadataTovideo_metadata", fields: [source], references: [id], onUpdate: NoAction)
   other_video_metadata video_metadata[] @relation("video_metadataTovideo_metadata")
 
@@ -60,20 +60,45 @@ model user {
   ballot_item ballot_item[]
 }
 
-model label_config {
-  name    String
-  type    String
-  details String
-  trigger String @id
-}
-
 model ballot_item {
   user_id        String
   creation_date  DateTime       @db.Timestamp(6)
   index          Int
   metadata_id    BigInt
+  voting_period  DateTime?      @db.Date
   video_metadata video_metadata @relation(fields: [metadata_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user           user           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, index])
+}
+
+model creator {
+  id             BigInt           @id @default(autoincrement())
+  channel_id     String
+  channel_name   String
+  pfp_url        String?
+  alias_of       BigInt?
+  last_updated   DateTime         @default(dbgenerated("CURRENT_DATE")) @db.Date
+  platform       video_platform
+  creator        creator?         @relation("creatorTocreator", fields: [alias_of], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_creator  creator[]        @relation("creatorTocreator")
+  video_metadata video_metadata[]
+
+  @@unique([channel_id, platform])
+}
+
+enum video_platform {
+  YouTube
+  Bilibili
+  Bluesky
+  Dailymotion
+  Derpibooru
+  Instagram
+  Newgrounds
+  Odysee
+  PonyTube
+  ThisHorsieRocks
+  Tiktok
+  Twitter
+  Vimeo
 }
