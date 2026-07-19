@@ -13,10 +13,13 @@ export async function POST(req: NextRequest) {
   if (!body.link || !body.playlist_id)
     return new Response(null, { status: 400 })
 
-  const fetch_result = await fetch_metadata(body.link)
+  let fetch_result
 
-  if ("type" in fetch_result)
-    return Response.json({ error: fetch_result.details })
+  try {
+    fetch_result = await fetch_metadata(body.link)
+  } catch (e: any) {
+    return Response.json({ error: e.message })
+  }
 
   if (!uid)
     return new Response()

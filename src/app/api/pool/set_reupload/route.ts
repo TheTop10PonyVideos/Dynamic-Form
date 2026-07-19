@@ -8,10 +8,13 @@ import { fetch_metadata } from "@/lib/external";
 async function handler(req: NextRequest) {
     const body: APISetReuploadRequestBody = await req.json()
 
-    const r_fetch_result = await fetch_metadata(body.reupload_link)
+    let r_fetch_result
 
-    if ('type' in r_fetch_result)
-        return new Response(r_fetch_result.details, { status: 404 })
+    try {
+        r_fetch_result = await fetch_metadata(body.reupload_link)
+    } catch (e: any) {
+        return new Response(e.message, { status: 404 })
+    }
 
     if (body.original_link == null) {
         setSource(r_fetch_result.id, null)
@@ -22,10 +25,13 @@ async function handler(req: NextRequest) {
         } satisfies APISetReuploadResponseBody)
     }
 
-    const o_fetch_result = await fetch_metadata(body.original_link)
+    let o_fetch_result
 
-    if ('type' in o_fetch_result)
-        return new Response(o_fetch_result.details, { status: 404 })
+    try {
+        o_fetch_result = await fetch_metadata(body.original_link)
+    } catch (e: any) {
+        return new Response(e.message, { status: 404 })
+    }
 
     if (o_fetch_result.source)
         return new Response('Setting reupload of reuploaded video is not allowed', { status: 400 })

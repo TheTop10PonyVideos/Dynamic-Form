@@ -9,10 +9,13 @@ async function handler(req: NextRequest) {
     const body: APIAnnotateVideoRequestBody = await req.json()
     body.reason = body.reason?.trim() || undefined
 
-    const fetch_result = await fetch_metadata(body.link, false)
+    let fetch_result
 
-    if ('type' in fetch_result)
-        return new Response(fetch_result.details, { status: 404 })
+    try {
+        fetch_result = await fetch_metadata(body.link, false)
+    } catch (e: any) {
+        return new Response(e.message, { status: 404 })
+    }
 
     if (body.eligible === false && !body.reason)
         return new Response('Ineligible annotations must come with a reason', { status: 400 })

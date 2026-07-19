@@ -1,12 +1,13 @@
 // Methods for extracting video metadata from external sources
 
 import { spawn } from "child_process"
-import { YTDLPItems, VideoPlatform, VideoDataClient, Flag } from "./types"
-import { getVideoMetadata, saveVideoMetadata } from "./queries/video"
-import { video_metadata } from "@/generated/prisma"
+import { YTDLPItems, VideoDataClient, Annotation, BaseVideoMetadata, BaseFetchResult, FetchResult } from "./types"
+import { getVideoMetadata, saveMetadata } from "./queries/video"
+import { creator, manual_label, video_metadata, video_platform } from "@/generated/prisma"
 import { getEligibleRange } from "./util"
-import { labels } from "./labels"
 import { constants, createWriteStream, openSync, WriteStream } from "fs"
+import { annotations } from "./annotations"
+import { after } from "next/server"
 
 // Variants of youtube domains that might be used
 const youtube_domains = ["m.youtube.com", "www.youtube.com", "youtube.com", "youtu.be"]
@@ -31,7 +32,7 @@ const accepted_domains = [
 const site_names: Record<string, string> = {
     'x': 'Twitter',
     'bsky': 'Bluesky',
-    'pony': 'Pony',
+    'pony': 'PonyTube',
     'thishorsie': 'ThisHorsieRocks',
     'dai': 'Dailymotion'
 }
@@ -126,35 +127,42 @@ function convert_iso8601_duration_to_seconds(iso8601_duration: string) {
     return total_seconds
 }
 
+/**
+ * Returns false if the video is not an appropriate candidate for the search whitelist, and null otherwise to allow manual review
+ */
+const search_disqualify_check = (recent: boolean, duration: number | null, uploader: string) => (
+    recent && (duration !== null ? duration >= 30 : true) && uploader != 'LittleshyFiM' ?
+    false : null
+)
+
 async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPItems[] }> {
     return new Promise((resolve, reject) => {
-        const cmd = spawn("yt-dlp", [
-            "-q",
-            "--no-download",
-            "--dump-json",
-            "--no-warnings",
-            "--sleep-interval", "2",
-            "--use-extractors",
-                "BiliBili,Bluesky,dailymotion,Instagram,lbry,Newgrounds,PeerTube,TikTok,twitter,vimeo,generic",
-            "--cookies", "cookies.txt",
+        const cmd = spawn('yt-dlp', [
+            '-q',
+            '--no-download',
+            '--dump-json',
+            '--no-warnings',
+            '--sleep-interval', '2',
+            '--use-extractors',
+                'BiliBili,Bluesky,dailymotion,Instagram,lbry,Newgrounds,PeerTube,TikTok,twitter,vimeo,generic',
+            '--cookies', 'cookies.txt',
             url
         ])
 
-        let response = ""
+        let response = ''
+        let err = ''
 
-        cmd.stdout.on('data', (data) => {
-            response += data.toString()
-        })
+        cmd.stdout.on('data', data => response += data.toString())
+        cmd.stderr.on('data', data => err += data.toString())
 
-        cmd.stderr.on('data', (data) => {
-            reject(data)
-        })
+        cmd.on('close', code => {
+            if (code !== 0)
+                return reject(new Error(err))
 
-        cmd.on('close', () => {
             try {
                 resolve(JSON.parse(response))
             } catch {
-                reject(`Failed to parse json: ${response}`)
+                reject(new Error(`Failed to parse json: ${response}`))
             }
         })
     })
@@ -164,11 +172,11 @@ async function from_youtube(url: URL, with_annotation: boolean) {
     const video_id = extract_yt_id(url)
 
     if (!video_id)
-        return labels.missing_id
+        throw new Error('Invalid video link format')
 
-    const cached = await getVideoMetadata(video_id, "YouTube", with_annotation)
+    const cached = await getVideoMetadata(video_id, 'YouTube', with_annotation)
 
-    if (cached)
+    if (cached?.video_metadata)
         return cached
 
     const id_param = new URLSearchParams({ id: video_id })
@@ -177,27 +185,37 @@ async function from_youtube(url: URL, with_annotation: boolean) {
     const response_item = response_data["items"][0]
 
     if (!response_item)
-        return labels.unavailable
+        throw new Error('Video is not public or is unavailable')
 
     const snippet = response_item["snippet"]
-    const iso8601_duration = response_item["contentDetails"]["duration"]
-    const upload_date = new Date(snippet["publishedAt"])
+    const
+        upload_date = new Date(snippet["publishedAt"]),
+        recent = upload_date >= getEligibleRange()[0],
+        channel_name = snippet["channelTitle"],
+        duration = convert_iso8601_duration_to_seconds(response_item["contentDetails"]["duration"])
 
-    const video_data = {
+    const ch_id_param = new URLSearchParams({ id: snippet["channelId"] })
+    const ch_response = await fetch(`https://www.googleapis.com/youtube/v3/channels?${ch_id_param}&part=snippet&key=${process.env.API_KEY}`)
+    const ch_response_data = await ch_response.json()
+    
+    const ch_response_item = ch_response_data["items"][0]
+    const ch_snippet = ch_response_item["snippet"]
+    const pfp_url = ch_snippet['thumbnails']['default']['url']
+
+    return {
         title: snippet["title"],
-        video_id: video_id,
+        video_id, recent, duration,
         thumbnail: snippet.thumbnails.medium.url,
-        uploader: snippet["channelTitle"],
-        uploader_id: snippet["channelId"],
         upload_date: upload_date,
-        duration: convert_iso8601_duration_to_seconds(iso8601_duration),
-        platform: "YouTube",
-        recent: upload_date >= getEligibleRange()[0],
-        searchable: null,
-        source: null
-    } satisfies Omit<video_metadata, 'id'>
-
-    return { ...(await saveVideoMetadata(video_data)), manual_label: null }
+        platform: 'YouTube',
+        searchable: search_disqualify_check(recent, duration, channel_name),
+        creator: {
+            channel_name, pfp_url,
+            platform: 'YouTube',
+            channel_id: snippet["channelId"],
+            last_updated: new Date(Date.now())
+        },
+    } satisfies BaseFetchResult
 }
 
 /**
@@ -207,22 +225,23 @@ async function from_other(url: URL, with_annotation: boolean) {
     let netloc = /([^.]+\.[^.]+)$/.exec(url.hostname)![1]
 
     if (!(accepted_domains.includes(netloc)))
-        return labels.unsupported_site
+        throw new Error(annotations.unsupported_site.details)
 
     const video_id = extract_ytdl_id(url)
 
     if (!video_id)
-        return labels.missing_id
+        throw new Error('Invalid video link format')
 
     const site = get_nonyt_site_name(url)
 
-    const cached = await getVideoMetadata(video_id, site as VideoPlatform, with_annotation)
+    const cached = await getVideoMetadata(video_id, site as video_platform, with_annotation)
 
     if (cached)
         return cached
 
     const url_str = url.toString()
-    let response = undefined
+    let response
+
     try {
         response = await ytdlp_fetch(url_str)
 
@@ -230,13 +249,11 @@ async function from_other(url: URL, with_annotation: boolean) {
             response = response["entries"][0]
     } catch (error) {
         console.log(error)
-        return labels.unavailable
+        throw new Error('Video is not public or is unavailable')
     }
 
-    /* Some urls might have specific issues that should
-    be handled here before they can be properly processed
-    If yt-dlp gets any updates that resolve any of these issues
-    then the respective case should be updated accordingly */
+    /* Some results might have missing or moved fields that
+    are to be handled here before they can be used properly */
     switch (site) {
         case "Twitter":
             response["title"] = `"${response["title"].slice(response["uploader"].length + 3)}"` // unsliced format is: uploader - title
@@ -262,37 +279,49 @@ async function from_other(url: URL, with_annotation: boolean) {
     }
 
     const date_str: string = response["upload_date"]
-    const upload_date = new Date(`${date_str.slice(0, 4)}-${date_str.slice(4, 6)}-${date_str.slice(6)}`)
+    const
+        upload_date = new Date(`${date_str.slice(0, 4)}-${date_str.slice(4, 6)}-${date_str.slice(6)}`),
+        recent = upload_date >= getEligibleRange()[0],
+        duration = response["duration"] || null,
+        uploader = response["uploader"],
+        platform = site.charAt(0).toUpperCase() + site.slice(1) as video_platform
 
-    const video_data = {
-        title: response["title"],
-        video_id: video_id,
-        thumbnail: response["thumbnail"] || "",
-        uploader: response["uploader"],
-        uploader_id: response["uploader_id"]!,
+    return {
+        title: response['title'],
+        video_id, recent, duration, platform,
+        thumbnail: response['thumbnail'] || '',
         upload_date: upload_date,
-        duration: response["duration"] || null,
-        platform: site.charAt(0).toUpperCase() + site.slice(1),
-        recent: upload_date >= getEligibleRange()[0],
-        searchable: null,
-        source: null
-    } satisfies Omit<video_metadata, 'id'>
-
-    return { ...(await saveVideoMetadata(video_data)), manual_label: null }
+        searchable: search_disqualify_check(recent, duration, uploader),
+        creator: {
+            channel_name: uploader,
+            pfp_url: null, // TODO
+            channel_id: response['uploader_id']!,
+            last_updated: new Date(Date.now()),
+            platform
+        },
+    } satisfies BaseFetchResult
 }
 
 /**
- * Given a video url, fetch metadata from its respective platform if supported
+ * Given a video url, try fetching its metadata from the respective platform if supported
  * @param url_str a link to a video
- * @returns A video metadata object if the fetch was successful, or a Flag that details what went wrong
+ * @returns A video metadata object if the fetch was successful
  */
-export async function fetch_metadata(url_str: string, with_annotation = false) {
+export async function fetch_metadata(url_str: string, with_annotation = false): Promise<FetchResult> {
     if (!url_str.startsWith("https://"))
         url_str = "https://" + url_str
 
     const url = new URL(url_str)
-    return youtube_domains.includes(url.hostname) ? from_youtube(url, with_annotation) : from_other(url, with_annotation)
+    const metadata = await (youtube_domains.includes(url.hostname) ? from_youtube(url, with_annotation) : from_other(url, with_annotation))
+    
+    if (!('id' in metadata))
+        return { ...(await saveMetadata(metadata)), manual_label: null, video_metadata: null }
+
+    return metadata
 }
+
+
+// Code for connecting to and sending videos to the discord bot
 
 let writeStream: WriteStream | null = null
 
@@ -318,7 +347,7 @@ export function connectPipe() {
 /**
  * Sends a video search result candidate to the discord bot
  */
-export function sendCandidateToBot(videoData: VideoDataClient & { annotations: Flag[], video_id: string }) {
+export function sendCandidateToBot(videoData: VideoDataClient & { annotations: Annotation[], video_id: string }) {
     if (writeStream)
         writeStream.write(JSON.stringify(videoData) + '\n')
 }
