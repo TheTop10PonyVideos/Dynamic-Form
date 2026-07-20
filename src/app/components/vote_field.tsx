@@ -23,13 +23,13 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
   const reuploadSourceData = fieldData.videoData?.video_metadata;
   const showEligibility = fieldData.videoData || fieldData.input && !focused
 
-  const containerColor = refFlag && !focused && {
+  const containerColor = refFlag && !focused ? ' ' + {
     'ineligible': styles.ineligible,
     'maybe ineligible': styles.warn
-  }[refFlag.type as string]
+  }[refFlag.type as string] : ''
 
-  return (
-    <div className={`${styles.field} ${containerColor}`}>
+  return <div style={{position: 'relative', zIndex: focused ? 1 : undefined}}>
+    <div className={`${styles.field}${containerColor}`}>
       {
         fieldData.videoData &&
         <div className={styles.video_display}>
@@ -101,28 +101,30 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
         )
       }</div>
 
-      {
-        searchResults &&
-        <div className={styles.searchResultBox}>
-          {searchResults.length &&
-            searchResults.map((resData, i) =>
+    </div>
+    {searchResults &&
+      <div className={styles.searchResultsShade}>
+        <div className={styles.dropAnchor}>
+          {
+            searchResults.length ? searchResults.map((r, i) =>
               <div
-                className={styles.searchResultDisplay}
+                className={`${styles.droppable} ${styles.searchResultDisplay}`}
                 key={i}
                 // TODO: change back to onClick where onBlur doesn't prevent it from running
-                onMouseDown={() => onEntryReplacement(index, resData)}
+                onMouseDown={() => onEntryReplacement(index, r)}
               >
-                <img src={resData.thumbnail || ""} width={112} height={63} alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
-                {resData.title || ""}
-                <div className={styles.video_origin}>By <b>{resData.creator.channel_name}</b> on <b>{resData.platform}</b></div>
+                <img src={r.thumbnail || ''} width={112} height={63} alt='' fetchPriority='low' loading='lazy' decoding='async' referrerPolicy='no-referrer'/>
+                <div style={{margin: '0px 2px'}}>
+                  {r.title.length > 47 ? r.title.slice(0, 45) + '...' : r.title}
+                </div>
+                <div className={styles.video_origin}><b>{
+                  r.creator.channel_name.length > 20 ? r.creator.channel_name.slice(0, 18) + '...' : r.creator.channel_name
+                }</b></div>
               </div>
-            ) ||
-            <div style={{textAlign: "center", padding: "10px", fontWeight: 600, fontSize: "0.9rem"}}>
-              No search results here yet!
-            </div>
+            ) : <div style={{top: '140px', position: 'relative'}}><b>No results found</b></div>
           }
         </div>
-      }
-    </div>
-  )
+      </div>
+    }
+  </div>
 }

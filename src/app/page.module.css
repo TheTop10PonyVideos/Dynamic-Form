@@ -242,6 +242,7 @@
   position: absolute;
   bottom: 10px;
   right: 10px;
+  z-index: 5;
 }
 
 .note {
@@ -258,7 +259,6 @@
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
-  z-index: 10;
   outline: 1px solid gray;
 }
 
@@ -305,7 +305,6 @@
   opacity: 0;
   transition: opacity 0.3s;
   pointer-events: none;
-  z-index: 10;
   outline: 1px solid gray;
 }
 
@@ -396,14 +395,57 @@
   background-color: #409844;
 }
 
-.searchResultBox {
+.searchResultsShade {
   position: absolute;
-  left: -8px;
-  width: 70%;
-  top: 100%;
-  z-index: 2;
-  gap: 10px;
-  background-color: rgb(235, 235, 235);
+  height: 120px;
+  top: auto;
+  gap: 10%;
+  bottom: -110px;
+  z-index: -1;
+  width: 100%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+  animation: fadeIn 500ms ease-in;
+}
+
+.droppable {
+  position: relative;
+  transform: translateY(110px);
+  animation: dropDown 450ms backwards ease-out;
+}
+
+.dropAnchor {
+  display: flex;
+  position: absolute;
+  justify-content: center;
+  width: 100%;
+  top: -90px;
+  gap: 10%;
+}
+
+.droppable:nth-child(2) {
+  animation-delay: 200ms;
+}
+
+.droppable:nth-child(3) {
+  animation-delay: 400ms;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dropDown {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(110px);
+  }
 }
 
 .video_display {
@@ -413,12 +455,13 @@
 }
 
 .searchResultDisplay {
-  display: flex;
-  position: relative;
-  border-bottom: black 1px solid;
-  padding: 10px 10px;
-  font-size: 0.85rem;
-  gap: 10px;
+  width: 120px;
+  height: 102px;
+  font-size: x-small;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: whitesmoke;
+  border: black 1px solid;
 }
 
 .searchResultDisplay:hover {
@@ -426,8 +469,7 @@
 }
 
 .searchResultDisplay img {
-  object-fit: cover;
-  border-radius: 5px;
+  width: 100%;
 }
 
 .video_display img {
@@ -445,8 +487,8 @@
 .searchResultDisplay > .video_origin {
   position: absolute;
   font-size: 0.65rem;
-  bottom: 5px;
-  right: 5px;
+  bottom: 1px;
+  right: 2px;
 }
 
 .input {
