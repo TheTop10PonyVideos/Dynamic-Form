@@ -37,7 +37,14 @@ export function getChannelLink(creator: { platform: video_platform, channel_id: 
 /**
  * Truncates and transforms video metadata to only what the client needs
 */
-export function toClientVideoMetadata(videoMetadata: Optional<FetchResult, 'manual_label' | 'video_metadata'>, strip_data = true): VideoDataClient {
+export function toClientVideoMetadata(
+    videoMetadata:
+        Optional<
+            FetchResult,
+            'manual_label' | 'video_metadata' | 'id' | 'creator_id' | 'source'
+        >,
+    strip_data = true
+): VideoDataClient {
     const clientReceivable = { ...videoMetadata }
 
     for (const unserializable of ['id', 'source', 'creator_id', 'alias_of']) {

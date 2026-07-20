@@ -131,13 +131,25 @@ CREATE TABLE IF NOT EXISTS manual_label (
 -- Functions
 CREATE OR REPLACE FUNCTION video_search(q TEXT, lim INT DEFAULT 3)
 RETURNS TABLE (
-	video_metadata video_metadata,
-	creator creator
+	video_id TEXT,
+	thumbnail TEXT,
+	title TEXT,
+	platform video_platform,
+	channel_id TEXT,
+	channel_name TEXT,
+	pfp_url TEXT
 )
 LANGUAGE sql
 STABLE
 AS $$
-	SELECT vm, c
+	SELECT
+		vm.video_id,
+        vm.thumbnail,
+        vm.title,
+        vm.platform,
+		c.channel_id,
+        c.channel_name,
+        c.pfp_url
 		FROM video_metadata vm JOIN creator c
 			ON vm.creator_id = c.id
 		WHERE vm.recent

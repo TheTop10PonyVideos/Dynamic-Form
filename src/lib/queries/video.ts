@@ -1,4 +1,4 @@
-import { creator, Prisma, video_metadata, video_platform } from "@/generated/prisma";
+import { Prisma, video_platform } from "@/generated/prisma";
 import { prisma } from "../prisma";
 import { BaseFetchResult } from "../types";
 
@@ -118,9 +118,22 @@ export async function updateSearchable(metadata_id: bigint, searchable: boolean)
 }
 
 
-export function titleSearchMetadata(query: string): Promise<{ video_metadata: video_metadata, creator: creator }[]> {
-    return prisma.$queryRaw`
+export async function titleSearchMetadata(query: string) {
+    const rows = await prisma.$queryRaw`
         SELECT *
         FROM video_search(${query});
-    `
+    ` as any[]
+
+    return rows.map(row => ({
+        video_id: row.video_id,
+        thumbnail: row.thumbnail,
+        title: row.title,
+        platform: row.platform,
+        creator: {
+            channel_id: row.channel_id,
+            platform: row.platform,
+            channel_name: row.channel_name,
+            pfp_url: row.pfp_url,
+        }
+    }))
 }

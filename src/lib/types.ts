@@ -5,7 +5,7 @@ import { eligibilityType } from "./annotations"
 export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
 
 export type VideoDataClient = Omit<
-    FetchResult, 'id' | 'source' | 'upload_date' | 'duration' | 'searchable' | 'recent' | 'video_id' | 'creator'
+    FetchResult, 'id' | 'source' | 'upload_date' | 'duration' | 'searchable' | 'recent' | 'creator'
 > & {
     link: string,
     creator: BaseCreatorMetadata
