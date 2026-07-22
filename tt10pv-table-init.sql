@@ -191,7 +191,7 @@ AS $$
 					WHERE recent AND searchable
 				GROUP BY creator_id
 			ORDER by latest_upload_date DESC
-			LIMIT 15
+			LIMIT 20
 		) v
 			ON c.id = v.creator_id
 		ORDER BY v.latest_upload_date DESC

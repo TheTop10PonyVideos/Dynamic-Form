@@ -113,9 +113,9 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
                 // TODO: change back to onClick where onBlur doesn't prevent it from running
                 onMouseDown={() => onEntryReplacement(index, r)}
               >
-                <img src={r.thumbnail || ''} width={112} height={63} alt='' fetchPriority='low' loading='lazy' decoding='async' referrerPolicy='no-referrer'/>
+                <img src={r.thumbnail || ''} alt='' fetchPriority='low' loading='lazy' decoding='async' referrerPolicy='no-referrer'/>
                 <div style={{margin: '0px 2px'}}>
-                  {r.title.length > 47 ? r.title.slice(0, 45) + '...' : r.title}
+                  {r.title.length > 38 ? r.title.slice(0, 35) + '...' : r.title}
                 </div>
                 <div className={styles.video_origin}><b>{
                   r.creator.channel_name.length > 20 ? r.creator.channel_name.slice(0, 18) + '...' : r.creator.channel_name

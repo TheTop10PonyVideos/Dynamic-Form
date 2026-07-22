@@ -455,17 +455,18 @@
 }
 
 .searchResultDisplay {
-  width: 120px;
-  height: 102px;
-  font-size: x-small;
+  width: 135px;
+  height: 122px;
+  font-size: smaller;
   border-radius: 8px;
   overflow: hidden;
   background-color: whitesmoke;
   border: black 1px solid;
+  transition: background-color 200ms;
 }
 
 .searchResultDisplay:hover {
-  background-color: #dddddd;
+  background-color: #f8f4d4;
 }
 
 .searchResultDisplay img {

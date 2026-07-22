@@ -35,6 +35,12 @@ export default async function Home() {
     channelName: c.channel_name
   }))
 
+  // Fisher-Yates Shuffle
+  for (let i = recentCreators.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [recentCreators[i], recentCreators[j]] = [recentCreators[j], recentCreators[i]];
+  }
+
   return (
     <div className={styles.page}>
       <VoteForm

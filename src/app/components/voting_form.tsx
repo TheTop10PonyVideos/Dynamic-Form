@@ -102,7 +102,7 @@ export default function VoteForm({ votingPeriod, formOpen, initialEntries, recen
       updateField(field_index, { input: e.currentTarget.value, videoData: null, flags: [annotations.invalid_link] })
       removeFieldSave(field_index)
       if (input.length >= 2)
-        inputTimeouts.current[field_index] = setTimeout(() => search(field_index, input), 500)
+        inputTimeouts.current[field_index] = setTimeout(() => search(field_index, input), 350)
       else
         setSearchResults([-1, []])
     }
