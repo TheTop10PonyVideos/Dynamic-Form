@@ -471,6 +471,7 @@
 
 .searchResultDisplay img {
   width: 100%;
+  aspect-ratio: 16 / 9;
 }
 
 .video_display img {

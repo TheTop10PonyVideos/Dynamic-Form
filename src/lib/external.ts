@@ -137,7 +137,7 @@ const search_disqualify_check = (recent: boolean, duration: number | null, uploa
 
 async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPItems[] }> {
     return new Promise((resolve, reject) => {
-        const cmd = spawn('yt-dlp', [
+        const cmd = spawn('yt-dlp-w', [
             '-q',
             '--no-download',
             '--dump-json',
