@@ -70,8 +70,8 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
       </div>
 
       <div className={styles.eligibilityIcon}>{
-        // Field data undefined -> waiting for response
-        fieldData === undefined ? <div className={styles.loading_icon}/> :
+        // Video data undefined -> waiting for response
+        fieldData.videoData === undefined ? <div className={styles.loading_icon}/> :
         showEligibility && (
           refFlag ? (
             // Annotation -> use eligibility listed on it

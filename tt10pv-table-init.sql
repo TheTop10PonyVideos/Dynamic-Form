@@ -193,7 +193,7 @@ AS $$
 			) v
 			ON c.id = v.creator_id
 	)
-	SELECT *
+	SELECT channel_id, platform, channel_name, pfp_url
 	FROM candidates c1
 		WHERE NOT EXISTS (
 			SELECT 1
