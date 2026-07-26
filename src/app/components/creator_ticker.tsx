@@ -9,7 +9,7 @@ export default function CreatorTicker({ displayData }: Props) {
   const items = displayData.map((c, i) =>
     <div key={i} className={styles.ticker_item}>
       {c.profileImgURL &&
-        <img src={c.profileImgURL} className={styles.profile_icon}/>
+        <img src={c.profileImgURL} className={styles.profile_icon} loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
       }
       <a href={c.channelURL} className={styles.channel_anchor}>{c.channelName}</a>
     </div>
