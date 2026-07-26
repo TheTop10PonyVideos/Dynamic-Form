@@ -83,8 +83,8 @@ export default function VoteForm({ votingPeriod, formOpen, initialEntries, recen
   const replaceFieldEntry = async (field_index: number, new_video: VideoDataClient) => {
     // Making a call to validate to get flags and save the vote
     setSearchResults([-1, []])
-    const field_flags = (await validate(new_video.link, field_index)).field_flags
-    updateField(field_index, { flags: field_flags, videoData: new_video, input: new_video.link })
+    const resp = await validate(new_video.link, field_index)
+    updateField(field_index, { flags: resp.field_flags, videoData: resp.video_data, input: resp.video_data!.link })
   }
 
   // Handler for changes to the ballot entry fields

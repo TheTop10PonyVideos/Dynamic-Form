@@ -5,8 +5,8 @@ import { Annotation, FetchResult, Optional, VideoDataClient } from "./types";
 import { annotations } from "./annotations";
 
 
-const platform_url_bases: Record<video_platform, string> = {
-    "YouTube": "www.youtube.com/",
+const video_url_bases: Record<video_platform, string> = {
+    "YouTube": "www.youtube.com/watch?v=",
     "Bilibili": "www.bilibili.com/",
     "Bluesky": "bsky.app/profile/",
     "Dailymotion": "www.dailymotion.com/",
@@ -21,10 +21,21 @@ const platform_url_bases: Record<video_platform, string> = {
     "Vimeo": "vimeo.com/"
 }
 
-const video_url_bases = { ...platform_url_bases }
-const channel_url_bases = { ...platform_url_bases }
-video_url_bases.YouTube += 'watch?v='
-channel_url_bases.YouTube += 'channel/'
+const channel_url_bases: Record<video_platform, string> = {
+    "YouTube": "www.youtube.com/channel/",
+    "Bilibili": "space.bilibili.com/",
+    "Bluesky": "bsky.app/profile/",
+    "Dailymotion": "www.dailymotion.com/",
+    "Derpibooru": "derpibooru.org/",
+    "Instagram": "www.instagram.com/",
+    "Newgrounds": "www.newgrounds.com/",
+    "Odysee": "odysee.com/",
+    "PonyTube": "pony.tube/",
+    "ThisHorsieRocks": "pt.thishorsie.rocks/",
+    "Tiktok": "www.tiktok.com/",
+    "Twitter": "x.com/",
+    "Vimeo": "vimeo.com/"
+}
 
 export function getVideoLink(video: { platform: video_platform, video_id: string }) {
     return `https://${video_url_bases[video.platform]}${video.video_id}`

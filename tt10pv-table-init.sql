@@ -184,17 +184,24 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 AS $$
-    SELECT c.channel_id, c.platform, c.channel_name, c.pfp_url
+	WITH candidates AS (
+	    SELECT c.channel_id, c.platform, c.channel_name, c.pfp_url, c.alias_of, c.id
 		FROM creator c JOIN (
-			SELECT creator_id, MAX(upload_date) latest_upload_date
-				FROM video_metadata
-					WHERE recent AND searchable
-				GROUP BY creator_id
-			ORDER by latest_upload_date DESC
-			LIMIT 20
-		) v
+			SELECT DISTINCT creator_id
+			FROM video_metadata
+				WHERE recent AND searchable
+			) v
 			ON c.id = v.creator_id
-		ORDER BY v.latest_upload_date DESC
+	)
+	SELECT *
+	FROM candidates c1
+		WHERE NOT EXISTS (
+			SELECT 1
+			FROM candidates c2
+				WHERE c1.alias_of = c2.id
+		)
+	ORDER BY RANDOM()
+	LIMIT 20;
 $$;
 
 -- Changes from previous version
