@@ -130,9 +130,8 @@ function convert_iso8601_duration_to_seconds(iso8601_duration: string) {
 /**
  * Returns false if the video is not an appropriate candidate for the search whitelist, and null otherwise to allow manual review
  */
-const search_disqualify_check = (recent: boolean, duration: number | null, uploader: string) => (
-    recent && (duration !== null ? duration >= 30 : true) && uploader != 'LittleshyFiM' ?
-    false : null
+const search_disqualify_check = (duration: number | null, uploader: string) => (
+    duration !== null && duration < 30 || uploader === 'LittleshyFiM' ? false : null
 )
 
 async function ytdlp_fetch(url: string): Promise<YTDLPItems | { entries: YTDLPItems[] }> {
@@ -190,7 +189,6 @@ async function from_youtube(url: URL, with_annotation: boolean) {
     const snippet = response_item["snippet"]
     const
         upload_date = new Date(snippet["publishedAt"]),
-        recent = upload_date >= getEligibleRange()[0],
         channel_name = snippet["channelTitle"],
         duration = convert_iso8601_duration_to_seconds(response_item["contentDetails"]["duration"])
 
@@ -204,11 +202,12 @@ async function from_youtube(url: URL, with_annotation: boolean) {
 
     return {
         title: snippet["title"],
-        video_id, recent, duration,
+        video_id, duration,
+        recent: upload_date >= getEligibleRange()[0],
         thumbnail: snippet.thumbnails.medium.url,
         upload_date: upload_date,
         platform: 'YouTube',
-        searchable: search_disqualify_check(recent, duration, channel_name),
+        searchable: search_disqualify_check(duration, channel_name),
         creator: {
             channel_name, pfp_url,
             platform: 'YouTube',
@@ -281,17 +280,17 @@ async function from_other(url: URL, with_annotation: boolean) {
     const date_str: string = response["upload_date"]
     const
         upload_date = new Date(`${date_str.slice(0, 4)}-${date_str.slice(4, 6)}-${date_str.slice(6)}`),
-        recent = upload_date >= getEligibleRange()[0],
         duration = response["duration"] || null,
         uploader = response["uploader"],
         platform = site.charAt(0).toUpperCase() + site.slice(1) as video_platform
 
     return {
         title: response['title'],
-        video_id, recent, duration, platform,
+        video_id, duration, platform,
+        recent: upload_date >= getEligibleRange()[0],
         thumbnail: response['thumbnail'] || '',
         upload_date: upload_date,
-        searchable: search_disqualify_check(recent, duration, uploader),
+        searchable: search_disqualify_check(duration, uploader),
         creator: {
             channel_name: uploader,
             pfp_url: null, // TODO

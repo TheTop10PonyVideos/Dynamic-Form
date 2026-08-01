@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
         !check_results.includes(annotations.too_old) &&
         await getNumVotes(metadata.id) >= 2
       ) {
-        const restructured: any = { ...returnData, annotations: check_results }
+        const restructured = { ...returnData, annotations: check_results, searchable: metadata.searchable }
         restructured['video_id'] = metadata.video_id
 
         sendCandidateToBot(restructured)
