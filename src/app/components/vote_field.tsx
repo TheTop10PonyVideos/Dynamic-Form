@@ -33,7 +33,13 @@ export default function VoteField({ index, fieldData, searchResults, focused, on
       {
         fieldData.videoData &&
         <div className={styles.video_display}>
-          <img src={fieldData.videoData.thumbnail || ""} width={160} height={90} alt="" fetchPriority="low" loading="lazy" decoding="async" referrerPolicy="no-referrer"/>
+          <a href={fieldData.videoData.link}>
+            <img
+              src={fieldData.videoData.thumbnail}
+              width={160} height={90} alt="" fetchPriority="low"
+              loading="lazy" decoding="async" referrerPolicy="no-referrer"
+            />
+          </a>
           {fieldData.videoData.title || ""}
           <div className={styles.video_origin}>By <b>{fieldData.videoData.creator.channel_name}</b> on <b>{fieldData.videoData.platform}</b></div>
         </div>
